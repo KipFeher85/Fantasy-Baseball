@@ -1,4 +1,4 @@
-# This is a sample Python script.
+#!/bin/python
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 import json
