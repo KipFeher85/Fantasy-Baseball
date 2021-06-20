@@ -15,6 +15,8 @@ Python Module Usage
 
   In [4]: import statsapi
   
+  In [5]: import yahoo_fb_stat_analysis as yfbsa
+  
   In [3]: oauth = OAuth2(None, None, from_file='OAuth2.json')
   [2021-06-18 15:39:52,655 DEBUG] [yahoo_oauth.oauth.__init__] Checking
   [2021-06-18 15:39:52,656 DEBUG] [yahoo_oauth.oauth.token_is_valid] ELAPSED TIME : 3514.6330070495605
@@ -28,8 +30,10 @@ Python Module Usage
   In [6]: lg = gm.to_league(leagueID)
   
   In [7]: tm = lg.to_team(team_key=lg.team_key())
+  
+  In [8]: lgObj = League()
 
-  In [8]: getCurrentRoster()
+  In [8]: lgObj.getCurrentRoster()
   Out[8]:
   Hitter List:
   {'player_id': 9718, 'name': 'J.T. Realmuto', 'status': '', 'position_type': 'B', 'eligible_positions': ['C', 'Util'], 'selected_position': 'C'}
@@ -47,7 +51,7 @@ Python Module Usage
   ....
   {'player_id': 10932, 'name': 'Sixto Sánchez', 'status': 'NA', 'position_type': 'P', 'eligible_positions': ['SP', 'P', 'NA'], 'selected_position': 'NA'}
 
-  In [9]: currentRosterStats('lastmonth')
+  In [9]: lgObj.currentRosterStats('lastmonth')
   Out[9]:
   Your batters:
   Name: Jake Fraley PA: 83.0 wRC: 17.273 wRC/PA: 0.208 wOBA: 0.422 BABIP: 0.306 WAR: 0.3 wRC+: 100.44673175922586
@@ -60,14 +64,14 @@ Python Module Usage
   ....
   Name: Alek Manoah GS: 4.0 IP: 20.1 BF: 83.0 BB%: 9.64 K%: 25.30 FIP: 4.33 ERA: 2.66 WHIP: 1.08 WAR: 0.3
 
-  In [10]: teamDetails()
+  In [10]: lgObj.teamDetails()
   Out[10]:
   [('team_key', 'team's key'), ('team_id', '10'), ('name', 'Vlad Jr for MVP'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/44fd8e00d7bbf781b3b7b4ca468a4072986c485ee4f0b8cd083b47ad327c42e3.png'}}]), ('waiver_priority', 10), ('number_of_moves', '21'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '1'}), ('league_scoring_type', 'head'), ('draft_position', 2), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '10', 'nickname': 'Mr. X', 'guid': 'B3QNT4MWWQDXZS3J7HDPCDPWVU', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '658', 'felo_tier': 'silver'}}])]
   [('team_key', 'team's key'), ('team_id', '12'), ('name', 'Pirates Suck'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'https://s.yimg.com/cv/apiv2/default/mlb/mlb_4_s.png'}}]), ('waiver_priority', 12), ('number_of_moves', '16'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '0'}), ('league_scoring_type', 'head'), ('draft_position', 3), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '12', 'nickname': 'Mr. Y', 'guid': 'JLUKFLTAHXRTWF46MW3YLFKE3E', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '668', 'felo_tier': 'silver'}}])]
   ....
   [('team_key', 'team's key'), ('team_id', '2'), ('name', 'A Bunch of Dumbo’s'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'https://s.yimg.com/cv/apiv2/default/mlb/mlb_2.png'}}]), ('waiver_priority', 1), ('number_of_moves', '1'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '0'}), ('league_scoring_type', 'head'), ('draft_position', 12), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '2', 'nickname': 'Mr. Z', 'guid': '7NIG4ZRBEELFHB43MOYUGCW3KU', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '477', 'felo_tier': 'bronze'}}])]
 
-  In [11]: predictTeamDay()
+  In [11]: lgObj.predictTeamDay()
   Out[11]:
   [2021-06-18 16:19:48,422 DEBUG] [statsapi.__init__.get] URL: https://statsapi.mlb.com/api/{ver}/schedule
   [2021-06-18 16:19:48,422 DEBUG] [statsapi.__init__.get] Found query param: sportId
@@ -104,10 +108,10 @@ Python Module Usage
   IP: 30.0 BF: 121.0 BB%: 5.79 K%: 36.36 FIP: 3.07 ERA: 0.79 WHIP: 1.07 K: 44.0 HR: 5.0
   Note: Kaprielian is off to a strong start with a 2.51 ERA through his first six big league starts. The rookie has been particularly tough against right-handed batters, holding them to a .131 batting average.
 
-  In [10]: faBatters = getBatters('lastmonth', 2)
+  In [10]: faBatters = lgObj.getBatters('lastmonth', 2)
   Out[10]: {'Albert Pujols': [63.0, 5.0, 16.667, 0.267, 0.283, 0.884, 0.376, 10.779, 0.0, 97.58016735667573, 0.171] .... }
 
-  In [10]: printBatters('lastmonth', faBatters)
+  In [10]: lgObj.printBatters('lastmonth', faBatters)
   Out[10]:
   Name: Luis Torrens PA: 9.0 wRC: 3.835 wRC/PA: 0.426 wOBA: 0.693 BABIP: 0.333 wRC+: 127.42872648942306
   Name: Luis Rengifo PA: 4.0 wRC: 0.897 wRC/PA: 0.224 wOBA: 0.442 BABIP: 0.667 wRC+: 118.29968811199949
@@ -116,13 +120,13 @@ Python Module Usage
   ....
   Name: Derek Fisher PA: 2.0 wRC: -0.263 wRC/PA: -0.132 wOBA: 0.0 BABIP: 0.0 wRC+: -5.554554043537899
 
-  In [10]: goldy = getBatter('season', 8967)
+  In [10]: goldy = lgObj.getBatter('season', 8967)
   Out[10]: {'Paul Goldschmidt': [284.0, 8.915, 24.806, 0.296, 0.248, 0.72, 0.315, 34.654, 0.9, 96.00683997825512, 0.122]}
 
-  In [12]: takenPitchers = getPitchers('lastmonth', 1)
+  In [12]: takenPitchers = lgObj.getPitchers('lastmonth', 1)
   Out[12]: {'Trevor Bauer': [9122.0, 14.0, 88.2, 351.0, 8.26, 31.62, 3.77, 2.64, 0.95, 1.2, 111.0, 14.0]}
 
-  In [12]: printPitchers('lastmonth', takenPitchers)
+  In [12]: lgObj.printPitchers('lastmonth', takenPitchers)
   Out[12]:
   Name: Edwin Díaz GS: 10.0 IP: 9.2 BF: 35.0 BB%: 2.86 K%: 45.71 FIP: -0.02 ERA: 0.93 WHIP: 0.62
   Name: Jacob deGrom GS: 5.0 IP: 27.0 BF: 91.0 BB%: 1.10 K%: 50.55 FIP: 0.32 ERA: 0.33 WHIP: 0.37
@@ -131,10 +135,10 @@ Python Module Usage
   ....
   Name: Zac Gallen GS: 1.0 IP: 2.2 BF: 14.0 BB%: 7.14 K%: 21.43 FIP: 9.04 ERA: 13.5 WHIP: 1.88
 
-  In [12]: bauer = getPitcher('season', 9122)
+  In [12]: bauer = lgObj.getPitcher('season', 9122)
   Out[12]: {'Trevor Bauer': [9122.0, 14.0, 88.2, 351.0, 8.26, 31.62, 3.77, 2.64, 0.95, 1.2, 111.0, 14.0]}
 
-  In [12]: getAllPlayers('season')
+  In [12]: lgObj.getAllPlayers('season')
   Out[12]:
   All pitchers currently on your team:
   Name: Max Scherzer GS: 13.0 IP: 77.1 BF: 289.0 BB%: 5.19 K%: 35.99 FIP: 3.03 ERA: 2.21 WHIP: 0.81 WAR: 1.9
