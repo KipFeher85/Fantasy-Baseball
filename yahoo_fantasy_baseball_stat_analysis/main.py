@@ -51,6 +51,17 @@ ballParkDict.update({"NL Avg": data[0]['NL Basic']})
 ballParkDict.update({"AL Avg": data[0]['AL Basic']})
 
 class League:
+    def getPlayer(self, playerName, type):
+        pass
+        playerId = lg.player_details(playerName)[0]['player_id']
+        playerPos = lg.player_details(playerName)[0]['position_type']
+        if playerPos == 'B':
+            playerDict = League.getBatter(self, type, playerId)
+            League.printBatters(self, type, playerDict)
+        else:
+            playerDict = League.getPitcher(self, type, playerId)
+            League.printPitchers(self, type, playerDict)
+
     def getCurrentRoster(self):
         pass
         """
@@ -874,6 +885,7 @@ class League:
         faBatters = League.getBatters(self, type, 2)
         print("All free-agent batters")
         League.printBatters(self, type, faBatters)
+
 
 
 
