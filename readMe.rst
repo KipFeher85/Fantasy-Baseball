@@ -8,29 +8,29 @@ Python Module Usage
 ::
 
   In [1]: from yahoo_oauth import OAuth2
-  
+
   In [2]: import yahoo_fantasy_api as yfa
 
   In [3]: import json
 
   In [4]: import statsapi
-  
-  In [5]: import yahoo_fb_stat_analysis as yfbsa
-  
+
+  In [5]: from yahoo_fb_stat_analysis import main as yfbsa
+
   In [6]: oauth = OAuth2(None, None, from_file='OAuth2.json')
   [2021-06-18 15:39:52,655 DEBUG] [yahoo_oauth.oauth.__init__] Checking
   [2021-06-18 15:39:52,656 DEBUG] [yahoo_oauth.oauth.token_is_valid] ELAPSED TIME : 3514.6330070495605
   [2021-06-18 15:39:52,656 DEBUG] [yahoo_oauth.oauth.token_is_valid] TOKEN IS STILL VALID
-  
+
   In [7]: gm = yfa.Game(oauth, 'mlb')
-  
+
   In [8]: leagueID = gm.league_ids(year=2021)[0]
   Out[8]: ['NNN.a.NNNN']
-  
+
   In [9]: lg = gm.to_league(leagueID)
-  
+
   In [10]: tm = lg.to_team(team_key=lg.team_key())
-  
+
   In [11]: lgObj = League()
 
   In [12]: lgObj.getCurrentRoster()
@@ -181,3 +181,6 @@ Python Module Usage
   Name: Ty France PA: 254.0 wRC: 35.285 wRC/PA: 0.139 wOBA: 0.336 BABIP: 0.299 WAR: 0.8 wRC+: 99.630166860551
   ....
   Name: Derek Fisher PA: 2.0 wRC: -0.263 wRC/PA: -0.132 wOBA: 0.0 BABIP: 0.0 WAR: 0.0 wRC+: -5.554554043537899
+
+  In [23]: lgObj.getPlayer("Jose Altuve", "season")
+  Out[23]: Name: Jose Altuve PA: 289.0 wRC: 51.075 wRC/PA: 0.177 wOBA: 0.383 BABIP: 0.298 WAR: 0.9 wRC+: 96.15519892336707
