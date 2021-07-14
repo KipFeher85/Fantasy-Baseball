@@ -13,9 +13,7 @@
     "FB": 100,
     "LD": 100,
     "IFFB": 98,
-    "FIP": 101,
-    "NL Basic": 100.0714286,
-    "AL Basic": 99.3125
+    "FIP": 101
   },
   {
     "Season": 2020,
@@ -31,9 +29,7 @@
     "FB": 104,
     "LD": 97,
     "IFFB": 104,
-    "FIP": 104,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 104
   },
   {
     "Season": 2020,
@@ -49,9 +45,7 @@
     "FB": 100,
     "LD": 101,
     "IFFB": 101,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -67,9 +61,7 @@
     "FB": 102,
     "LD": 96,
     "IFFB": 102,
-    "FIP": 101,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 101
   },
   {
     "Season": 2020,
@@ -85,9 +77,7 @@
     "FB": 95,
     "LD": 101,
     "IFFB": 93,
-    "FIP": 100,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 100
   },
   {
     "Season": 2020,
@@ -103,9 +93,7 @@
     "FB": 104,
     "LD": 105,
     "IFFB": 107,
-    "FIP": 102,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 102
   },
   {
     "Season": 2020,
@@ -121,9 +109,7 @@
     "FB": 102,
     "LD": 103,
     "IFFB": 97,
-    "FIP": 98,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 98
   },
   {
     "Season": 2020,
@@ -139,9 +125,7 @@
     "FB": 100,
     "LD": 101,
     "IFFB": 99,
-    "FIP": 100,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 100
   },
   {
     "Season": 2020,
@@ -157,9 +141,7 @@
     "FB": 100,
     "LD": 100,
     "IFFB": 102,
-    "FIP": 102,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 102
   },
   {
     "Season": 2020,
@@ -175,9 +157,7 @@
     "FB": 99,
     "LD": 102,
     "IFFB": 102,
-    "FIP": 97,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 97
   },
   {
     "Season": 2020,
@@ -193,9 +173,7 @@
     "FB": 102,
     "LD": 95,
     "IFFB": 102,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -211,9 +189,7 @@
     "FB": 98,
     "LD": 98,
     "IFFB": 102,
-    "FIP": 96,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 96
   },
   {
     "Season": 2020,
@@ -229,9 +205,7 @@
     "FB": 103,
     "LD": 103,
     "IFFB": 98,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -247,9 +221,7 @@
     "FB": 99,
     "LD": 102,
     "IFFB": 97,
-    "FIP": 95,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 95
   },
   {
     "Season": 2020,
@@ -265,9 +237,7 @@
     "FB": 98,
     "LD": 102,
     "IFFB": 98,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -283,9 +253,7 @@
     "FB": 98,
     "LD": 103,
     "IFFB": 99,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -301,9 +269,7 @@
     "FB": 99,
     "LD": 101,
     "IFFB": 95,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -319,9 +285,7 @@
     "FB": 101,
     "LD": 100,
     "IFFB": 103,
-    "FIP": 103,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 103
   },
   {
     "Season": 2020,
@@ -337,9 +301,7 @@
     "FB": 98,
     "LD": 103,
     "IFFB": 86,
-    "FIP": 105,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 105
   },
   {
     "Season": 2020,
@@ -355,9 +317,7 @@
     "FB": 97,
     "LD": 99,
     "IFFB": 97,
-    "FIP": 97,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 97
   },
   {
     "Season": 2020,
@@ -373,9 +333,7 @@
     "FB": 97,
     "LD": 99,
     "IFFB": 102,
-    "FIP": 98,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 98
   },
   {
     "Season": 2020,
@@ -391,9 +349,7 @@
     "FB": 100,
     "LD": 98,
     "IFFB": 104,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -409,9 +365,7 @@
     "FB": 99,
     "LD": 97,
     "IFFB": 100,
-    "FIP": 100,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 100
   },
   {
     "Season": 2020,
@@ -427,9 +381,7 @@
     "FB": 102,
     "LD": 99,
     "IFFB": 99,
-    "FIP": 102,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 102
   },
   {
     "Season": 2020,
@@ -445,9 +397,7 @@
     "FB": 102,
     "LD": 95,
     "IFFB": 107,
-    "FIP": 98,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 98
   },
   {
     "Season": 2020,
@@ -463,9 +413,7 @@
     "FB": 102,
     "LD": 98,
     "IFFB": 107,
-    "FIP": 103,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 103
   },
   {
     "Season": 2020,
@@ -481,9 +429,7 @@
     "FB": 100,
     "LD": 100,
     "IFFB": 96,
-    "FIP": 100,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 100
   },
   {
     "Season": 2020,
@@ -499,9 +445,7 @@
     "FB": 99,
     "LD": 103,
     "IFFB": 104,
-    "FIP": 98,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 98
   },
   {
     "Season": 2020,
@@ -517,9 +461,7 @@
     "FB": 98,
     "LD": 101,
     "IFFB": 99,
-    "FIP": 99,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 99
   },
   {
     "Season": 2020,
@@ -535,8 +477,6 @@
     "FB": 98,
     "LD": 100,
     "IFFB": 102,
-    "FIP": 95,
-    "NL Basic": "",
-    "AL Basic": ""
+    "FIP": 95
   }
 ]
