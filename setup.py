@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='yahoo_fb_stat_analysis',
-      version='1.4',
+      version='2.1',
       description='Python module to allow for advanced statistical analysis',
       long_description=readme(),
       url='https://github.com/KipFeher85/Fantasy-Baseball',
@@ -18,6 +18,6 @@ setup(name='yahoo_fb_stat_analysis',
           'License :: OSI Approved :: MIT License',
           'Programming Language :: Python :: 3.7',
       ],
-      install_requires=['yahoo_oauth', 'yahoo_fantasy_api'],
+      install_requires=['yahoo_oauth', 'yahoo_fantasy_api', 'json', 'statsapi', 'csv', 'pandas', 'datetime', 'dateutil'],
       zip_safe=False,
       )
