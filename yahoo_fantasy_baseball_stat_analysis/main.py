@@ -317,7 +317,7 @@ class League:
         :return:
         """
         # Create a dictionary of all the games being played today
-        today = statsapi.schedule(date="2021-07-01")
+        today = statsapi.schedule()
         if(len(today)) > 0:
             # Create lists for both the away and home teams
             hTList = []
