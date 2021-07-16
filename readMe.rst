@@ -2,6 +2,19 @@
 Yahoo Fantasy Baseball Statistic Analysis Module
 ================================================
 
+Setup
+-----
+OAuth2.json setup
+
+- Create an empty json file named 'OAuth2'
+- Get access token and consumer key by register an app: https://developer.yahoo.com/apps/create/
+- Place these within your OAuth2.json as done in this link: https://pypi.org/project/yahoo-oauth/
+
+League Constants
+
+- Make sure to call update_league_constats() ONCE AND ONLY ONCE PER DAY. This allows the user to run into less scenarios where they request too many times from a given API
+- Make sure to allways call starter() whenever using the package, it is required for all functions
+
 Python Module Usage
 -------------------
 
