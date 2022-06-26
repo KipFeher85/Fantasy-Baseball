@@ -2,18 +2,22 @@
 Yahoo Fantasy Baseball Statistic Analysis Module
 ================================================
 
-Special Thanks
---------------
+Setup
+-----
+OAuth2.json setup
 
-::
+- Create an empty json file named 'OAuth2'
+- Get access token and consumer key by register an app: https://developer.yahoo.com/apps/create/
+- Place these within your OAuth2.json as done in this link: https://pypi.org/project/yahoo-oauth/
 
-spilchen -- yahoo_fantasy_api: https://github.com/spilchen/yahoo_fantasy_api
+League Constants
 
-Todd Roberts -- MLB-StatsAPI: https://github.com/toddrob99/MLB-StatsAPI
-::
+- Make sure to call update_league_constats() ONCE AND ONLY ONCE PER DAY. This allows the user to run into less scenarios where they request too many times from a given API
+- Make sure to call update_ballpark_constants ONCE per year. This only needs done once per season since it uses ballpark factors from 2021
+- Make sure to allways call starter() whenever using the package, it is required for all functions
 
 Python Module Usage
-------------------
+-------------------
 
 ::
 
