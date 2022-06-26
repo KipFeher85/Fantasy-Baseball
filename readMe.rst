@@ -2,8 +2,18 @@
 Yahoo Fantasy Baseball Statistic Analysis Module
 ================================================
 
+Special Thanks
+--------------
+
+::
+
+spilchen -- yahoo_fantasy_api: https://github.com/spilchen/yahoo_fantasy_api
+
+Todd Roberts -- MLB-StatsAPI: https://github.com/toddrob99/MLB-StatsAPI
+::
+
 Python Module Usage
--------------------
+------------------
 
 ::
 
@@ -23,7 +33,7 @@ Python Module Usage
 
   In [8]: from yahoo_fb_stat_analysis import main as yfbsa
 
-  In [9]: lgObj = League(year=2022)
+  In [9]: lgObj = yfbsa.League(year=2022)
 
   In [10]: lgObj.update_league_constants()
 
