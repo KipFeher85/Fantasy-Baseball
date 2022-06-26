@@ -1,15 +1,29 @@
-Time,Season,Last Month,Last Week
-OBA Weight,0.313
-wOBA Scale,1.226
-BB Weight,0.693
-HBP Weight,0.724
-1B Weight,0.884
-2B Weight,1.251
-3B Weight,1.583
-HR Weight,2.03
-wRAA Weight,0.12
-AL Plate Appearances,50157,13905,2493
-AL Weighted Runs Created,6108,1773,287
-NL Plate Appearances,50345,14461,2741
-NL Weighted Runs Created,5930,1796,379
-FIP Constant,3.164
+Time,Season,Last Month,Last Week
+
+OBA Weight,0.313
+
+wOBA Scale,1.226
+
+BB Weight,0.693
+
+HBP Weight,0.724
+
+1B Weight,0.884
+
+2B Weight,1.251
+
+3B Weight,1.583
+
+HR Weight,2.03
+
+wRAA Weight,0.12
+
+AL Plate Appearances,50157,13905,2493
+
+AL Weighted Runs Created,6108,1773,287
+
+NL Plate Appearances,50345,14461,2741
+
+NL Weighted Runs Created,5930,1796,379
+
+FIP Constant,3.164
