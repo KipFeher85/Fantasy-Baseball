@@ -1,55 +1,93 @@
-# This is a sample Python script.
-
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 import json
-import statsapi
 import csv
 import pandas as pd
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import statsapi
 
 
 class League:
-    # Obtain Yahoo OAuth2 access token from the file given
-    oauth = OAuth2(None, None, from_file='OAuth2.json')
+    def __init__(self, year):
+        
+        # Obtain Yahoo OAuth2 access token from the file given
+        self.oauth = OAuth2(None, None, from_file='OAuth2.json')
 
-    # Create a Yahoo Fantasy MLB Game object using the access token
-    gm = yfa.Game(oauth, 'mlb')
+        # Create a Yahoo Fantasy MLB Game object using the access token
+        self.gm = yfa.Game(self.oauth, 'mlb')
 
-    # Get the league id desired
-    leagueID = gm.league_ids(year=2021)[0]
+        # Get the league id desired
+        self.leagueID = self.gm.league_ids(year=year)[0]
+    
+        # Create a league object given the first id of the user's league id's for the season
+        self.lg = self.gm.to_league(self.leagueID)
+    
+        # Create a team object given the team's key
+        self.tm = self.lg.to_team(team_key=self.lg.team_key())
 
-    # Create a league object given the first id of the user's league id's for the season
-    lg = gm.to_league(leagueID)
+        # Set the desired year
+        self.yr = year
+    
+        # Create dict to hold ballpark factors, lists to hold NL and AL team names
+        self.ballParkDict = {}
+        self.alTeamList = []
+        self.nlTeamList = []
+    
+        self.obaW = 0
+        self.wOBAScale = 0
+        self.wBB = 0
+        self.wHBP = 0
+        self.w1B = 0
+        self.w2B = 0
+        self.w3B = 0
+        self.wHR = 0
+        self.rPAW = 0  # wRAA weight
+    
+        self.alPA = 0
+        self.alWRC = 0
+        self.nlPA = 0
+        self.nlWRC = 0
+    
+        self.FIP_Constant = 0
 
-    # Create a team object given the team's key
-    tm = lg.to_team(team_key=lg.team_key())
+    def update_ballpark_constants(self):
+        """
+        THIS FUNCTION ONLY NEEDS TO BE CALLED ONCE PER SEASON
+        This function allows the user to not exceed the rate-limit for any api
 
-    # Create dict to hold ballpark factors, lists to hold NL and AL team names
-    ballParkDict = {}
-    alTeamList = []
-    nlTeamList = []
+        Gets the following ballpark factors for the season from fangraphs:
+        - Basic, 1B, 2B, 3B, HR, SO, BB, GB, FB, LD, IFFB, FIP
 
-    obaW = 0
-    wOBAScale = 0
-    wBB = 0
-    wHBP = 0
-    w1B = 0
-    w2B = 0
-    w3B = 0
-    wHR = 0
-    rPAW = 0  # wRAA weight
+        Writes this data to a json file 'ballParkFactors.json'
+        :return:
+        """
+        # Get df of all the ballpark constants
+        guts = pd.read_html(f"https://www.fangraphs.com/guts.aspx?type=pf&teamid=0&season={self.yr - 1}")[8]
+        # Create a array to hold the ballpark constant dict
+        team_dict = {
+            "Teams": {}
+        }
+        for i in range(0, len(guts)):
+            full_team_name = statsapi.lookup_team(guts.iloc[i][1], activeStatus="Y", season=self.yr)[0]["name"]
+            team_dict["Teams"][full_team_name] = {
+                "Basic": int(guts.iloc[i][2]),
+                "1B": int(guts.iloc[i][5]),
+                "2B": int(guts.iloc[i][6]),
+                "3B": int(guts.iloc[i][7]),
+                "HR": int(guts.iloc[i][8]),
+                "SO": int(guts.iloc[i][9]),
+                "BB": int(guts.iloc[i][10]),
+                "GB": int(guts.iloc[i][11]),
+                "FB": int(guts.iloc[i][12]),
+                "LD": int(guts.iloc[i][13]),
+                "IFFB": int(guts.iloc[i][14]),
+                "FIP": int(guts.iloc[i][15])
+            }
+        with open("ballParkFactors.json", "w") as outfile:
+            json.dump(team_dict, outfile, indent=4)
 
-    alPA = 0
-    alWRC = 0
-    nlPA = 0
-    nlWRC = 0
-
-    FIP_Constant = 0
-
-    @staticmethod
-    def update_league_constants():
+    def update_league_constants(self):
         """
         THIS FUNCTION ONLY NEEDS TO BE CALLED ONCE PER DAY
         This function allows the user to not exceed the rate-limit for any api
@@ -62,23 +100,22 @@ class League:
         Writes this data to a csv file 'leagueConstants.csv'
         :return:
         """
-
         # Url for the fangraphs 'GUTS' page
         gutsURL = "https://www.fangraphs.com/guts.aspx?type=cn"
         # Turn the html page into a dataframe
         gutsDF = pd.read_html(gutsURL)[8].loc[0]
 
         # Set the League object's weights
-        League.obaW = gutsDF[1]
-        League.wOBAScale = gutsDF[2]
-        League.wBB = gutsDF[3]
-        League.wHBP = gutsDF[4]
-        League.w1B = gutsDF[5]
-        League.w2B = gutsDF[6]
-        League.w3B = gutsDF[7]
-        League.wHR = gutsDF[8]
-        League.rPAW = gutsDF[11]  # wRAA weight
-        League.FIP_Constant = gutsDF[13]
+        self.obaW = gutsDF[1]
+        self.wOBAScale = gutsDF[2]
+        self.wBB = gutsDF[3]
+        self.wHBP = gutsDF[4]
+        self.w1B = gutsDF[5]
+        self.w2B = gutsDF[6]
+        self.w3B = gutsDF[7]
+        self.wHR = gutsDF[8]
+        self.rPAW = gutsDF[11]  # wRAA weight
+        self.FIP_Constant = gutsDF[13]
 
         # Create a list to hold the urls for NL and AL stats over different time periods
         alURList = []
@@ -90,10 +127,8 @@ class League:
         year = "20" + date.today().strftime("%y")
 
         # Set the url to get AL and NL league stats for the season
-        alURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=2021-01-01&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
-        nlURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=2021-01-01&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
+        alURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={year}-01-01&enddate={year}-{month}-{day}")
+        nlURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={year}-01-01&enddate={year}-{month}-{day}")
 
         # Get the date of previous month from current day
         last_month = date.today() - relativedelta(months=1)
@@ -102,12 +137,8 @@ class League:
         lYear = "20" + last_month.strftime("%y")
 
         # Set the url to get AL and NL league stats for the last month
-        alURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=" + str(
-                lYear) + "-" + str(lMonth) + "-" + str(lDay) + "&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
-        nlURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=" + str(
-                lYear) + "-" + str(lMonth) + "-" + str(lDay) + "&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
+        alURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        nlURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
 
         # Get the date of previous week from current day
         last_week = date.today() - relativedelta(weeks=1)
@@ -115,13 +146,9 @@ class League:
         lDay = last_week.strftime("%d")
         lYear = "20" + last_week.strftime("%y")
 
-        # Set the url to get AL and NL league stats for the last month
-        alURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=" + str(
-                lYear) + "-" + str(lMonth) + "-" + str(lDay) + "&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
-        nlURList.append("https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season=2021&month=1000&season1=2021&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate=" + str(
-                lYear) + "-" + str(lMonth) + "-" + str(lDay) + "&enddate=" + str(
-                year) + "-" + str(month) + "-" + str(day))
+        # Set the url to get AL and NL league stats for the last week
+        alURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        nlURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
 
         # Create lists to hold AL and NL league stats
         alPAList = []
@@ -146,23 +173,22 @@ class League:
             league_writer = csv.writer(league_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             # Write data to the csv files
             league_writer.writerow(['Time', 'Season', 'Last Month', 'Last Week'])
-            league_writer.writerow(['OBA Weight', League.obaW])
-            league_writer.writerow(['wOBA Scale', League.wOBAScale])
-            league_writer.writerow(['BB Weight', League.wBB])
-            league_writer.writerow(['HBP Weight', League.wHBP])
-            league_writer.writerow(['1B Weight', League.w1B])
-            league_writer.writerow(['2B Weight', League.w2B])
-            league_writer.writerow(['3B Weight', League.w3B])
-            league_writer.writerow(['HR Weight', League.wHR])
-            league_writer.writerow(['wRAA Weight', League.rPAW])
+            league_writer.writerow(['OBA Weight', self.obaW])
+            league_writer.writerow(['wOBA Scale', self.wOBAScale])
+            league_writer.writerow(['BB Weight', self.wBB])
+            league_writer.writerow(['HBP Weight', self.wHBP])
+            league_writer.writerow(['1B Weight', self.w1B])
+            league_writer.writerow(['2B Weight', self.w2B])
+            league_writer.writerow(['3B Weight', self.w3B])
+            league_writer.writerow(['HR Weight', self.wHR])
+            league_writer.writerow(['wRAA Weight', self.rPAW])
             league_writer.writerow(['AL Plate Appearances', alPAList[0], alPAList[1], alPAList[2]])
             league_writer.writerow(['AL Weighted Runs Created', alWRCList[0], alWRCList[1], alWRCList[2]])
             league_writer.writerow(['NL Plate Appearances', nlPAList[0], nlPAList[1], nlPAList[2]])
             league_writer.writerow(['NL Weighted Runs Created', nlWRCList[0], nlWRCList[1], nlWRCList[2]])
-            league_writer.writerow(['FIP Constant', League.FIP_Constant])
+            league_writer.writerow(['FIP Constant', self.FIP_Constant])
 
-    @staticmethod
-    def starter():
+    def starter(self):
         """
         Initializes the league object, needs to be always be called
         - Gets list of NL and AL teams in addition to each ball park factor
@@ -175,34 +201,40 @@ class League:
             # Create lists for each team and ballpark factors
             teamList = []
             bfList = []
+            nlBFList = []
+            alBFList = []
             # Create json object from file
             data = json.load(f)
+            teams = list(data["Teams"].keys())
             # Add each team and ballpark factor to their respective lists
-            for i in range(0, len(data)):
-                teamList.append(data[i]['Team'])
-                bfList.append(data[i]['Basic'])
+            for i in range(0, len(teams)):
+                teamList.append(teams[i])
+                basic = int(data["Teams"][teams[i]]["Basic"])
+                bfList.append(basic)
+                if i in range(0, 14):
+                    alBFList.append(basic)
+                else:
+                    nlBFList.append(basic)
         # Add every team and their respective ballpark factor to the dict
         for i in range(0, len(teamList)):
-            League.ballParkDict.update({teamList[i]: bfList[i]})
+            self.ballParkDict.update({teamList[i]: bfList[i]})
         # Add every AL team to a list
         for i in range(0, 14):
-            League.alTeamList.append(teamList[i])
+            self.alTeamList.append(teamList[i])
         # Add every NL team to a list
         for i in range(14, len(teamList)):
-            League.nlTeamList.append(teamList[i])
+            self.nlTeamList.append(teamList[i])
         # Add a column to the dict for both the NL and AL avg ballpark factor
-        League.ballParkDict.update({"NL Avg": data[0]['NL Basic']})
-        League.ballParkDict.update({"AL Avg": data[0]['AL Basic']})
-
+        self.ballParkDict.update({"NL Avg": sum(nlBFList) / len(nlBFList)})
+        self.ballParkDict.update({"AL Avg": sum(alBFList) / len(alBFList)})
         # Open csv file
         df = pd.read_csv("leagueConstants.csv")
         # Get the 'Season' column from the data frame
         season = df.Season
         # Set the league's FIP constant
-        League.FIP_Constant = season.loc[13]
+        self.FIP_Constant = season.loc[13]
 
-    @staticmethod
-    def get_player(player_name, time):
+    def get_player(self, player_name, time):
         """
         Returns a player's stats over the specified time period given a name
         :param player_name: str
@@ -212,23 +244,22 @@ class League:
         playerDict = {}
         try:
             # Grab the player's id and position
-            playerId = League.lg.player_details(player_name)[0]['player_id']
-            playerPos = League.lg.player_details(player_name)[0]['position_type']
+            playerId = self.lg.player_details(player_name)[0]['player_id']
+            playerPos = self.lg.player_details(player_name)[0]['position_type']
 
             # If player is a batter
             if playerPos == 'B':
                 # Get the player's stats as a dict
-                playerDict = League.get_batter(time, playerId)
+                playerDict = self.get_batter(time, playerId)
                 # Print the desired batter
             elif playerPos == 'P':
-                playerDict = League.get_pitcher(time, playerId)
+                playerDict = self.get_pitcher(time, playerId)
             return playerDict
         except:
             # If player is not available display message
             return str(player_name) + "'s stats not available"
 
-    @staticmethod
-    def print_player(player_name, time):
+    def print_player(self, player_name, time):
         """
         Display's the desired player's stats over the desired time period
         :param player_name: str - Player name
@@ -236,20 +267,19 @@ class League:
         :return:
         """
         # If player is a batter
-        playerDict = League.get_player(player_name, time)
+        playerDict = self.get_player(player_name, time)
         if playerDict != str(player_name) + "'s stats not available":
-            playerPos = League.lg.player_details(player_name)[0]['position_type']
+            playerPos = self.lg.player_details(player_name)[0]['position_type']
             if playerPos == 'B':
                 # Print the desired batter
-                League.print_batters(playerDict, reverse=True)
+                self.print_batters(playerDict, reverse=True)
             elif playerPos == 'P':
-                League.print_pitchers(playerDict, reverse=False)
+                self.print_pitchers(playerDict, reverse=False)
         else:
             # If player is not available display message
             print(playerDict)
 
-    @staticmethod
-    def current_roster_stats(time):
+    def current_roster_stats(self, time):
         """
         Display roster and their advanced stats over the desired time period
         :param time: str - "season" || "lastmonth" || "lastweek"
@@ -257,18 +287,17 @@ class League:
         """
         print("Your batters: ")
         # Get the dict of all batters currently on your team
-        currentBatters = League.get_batters(time, 3, False)
+        team_batters = self.get_batters(time, 3, False)
         # Print every batter and their advanced stats in currentBatters
-        League.print_batters(currentBatters, True)
+        self.print_batters(team_batters, True)
 
         print("\n" + "Your pitchers: ")
         # Get the dict of all pitchers currently on your team
-        currentPitchers = League.get_pitchers(time, 3, False)
+        team_pitchers = self.get_pitchers(time, 3, False)
         # Print every pitcher and their advanced stats in currentPitchers
-        League.print_pitchers(currentPitchers, False)
+        self.print_pitchers(team_pitchers, False)
 
-    @staticmethod
-    def current_roster_basic():
+    def current_roster_basic(self):
         """
         Display's a player's entire roster without their stats but player details (Player Id, Position, Eligible Postions, Status)
         :return:
@@ -278,7 +307,7 @@ class League:
         injuredList = []
 
         # Iterate through every player on the team within the current week
-        for i in League.tm.roster(League.lg.current_week()):
+        for i in self.tm.roster(self.lg.current_week()):
             if i["status"] != '':
                 injuredList.append(i)
             elif i["position_type"] == 'P':
@@ -292,23 +321,21 @@ class League:
         print("\n" + "Pitcher List: ")
         for i in pitcherList:
             print(i)
-        print("\n" + "I, DTD, NA: ")
+        print("\n" + "IL, DTD, NA: ")
         for i in injuredList:
             print(i)
 
-    @staticmethod
-    def team_details():
+    def team_details(self):
         """
         Gives basic details for every team in the league including name, owner, owner legacy, logo info
         :return:
         """
         # Get dict of all teams in the league
-        tms = League.lg.teams()
+        tms = self.lg.teams()
         for i in tms:
             print(list(tms[i].items()))
 
-    @staticmethod
-    def predict_team_day():
+    def predict_team_day(self):
         """
         Function to help aid in the selection of players for the daily lineup
         Displays the probable pitchers for every game
@@ -353,7 +380,7 @@ class League:
                 homePitcher = game["home_probable_pitcher"]
                 # Get the player_id of the home pitcher
                 try:
-                    hPID = League.lg.player_details(homePitcher)[0]['player_id']
+                    hPID = self.lg.player_details(homePitcher)[0]['player_id']
                 except:
                     hPID = 0
                 # Add the homePitcher's name and id to the list
@@ -362,7 +389,7 @@ class League:
                 awayPitcher = game["away_probable_pitcher"]
                 # Get the player_id of the away pitcher
                 try:
-                    aPID = League.lg.player_details(awayPitcher)[0]['player_id']
+                    aPID = self.lg.player_details(awayPitcher)[0]['player_id']
                 except:
                     aPID = 0
                 # Add the awayPitcher's name and id to the list
@@ -372,7 +399,7 @@ class League:
             for i in homePIDList:
                 # Get the pitchers stats over the last month if available, if not then just add player's name and id
                 try:
-                    hPStats = League.get_pitcher("lastmonth", i[1])
+                    hPStats = self.get_pitcher("lastmonth", i[1])
                     homePitcherStatList.append(hPStats)
                 except:
                     homePitcherStatList.append({i[0]: [i[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
@@ -388,7 +415,7 @@ class League:
             for i in awayPIDList:
                 # Get the pitchers stats over the last month if available, if not then just add player's name and id
                 try:
-                    aPStats = League.get_pitcher("lastmonth", i[1])
+                    aPStats = self.get_pitcher("lastmonth", i[1])
                     awayPitcherStatList.append(aPStats)
                 except:
                     awayPitcherStatList.append({i[0]: [i[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
@@ -417,29 +444,29 @@ class League:
 
         print("\nTeam batter stats over the past week: ")
         # Create a dict containing the stats of all batters on team over the past week
-        teamBatters = League.get_batters("lastweek", 3, qualified=False)
+        teamBatters = self.get_batters(time="lastweek", status=3, qualified=False)
         # Print every batter in teamBatters
-        League.print_batters(teamBatters, reverse=True)
+        self.print_batters(teamBatters, reverse=True)
 
         print("\nTeam pitcher stats over the past week: ")
         # Create a dict containing the stats of all pitchers on team over the past week
-        teamPitchers = League.get_pitchers("lastweek", 3, qualified=False)
+        teamPitchers = self.get_pitchers(time="lastweek", status=3, qualified=False)
         # Print every batter in teamPitchers
-        League.print_pitchers(teamPitchers, reverse=False)
+        self.print_pitchers(teamPitchers, reverse=False)
 
-    @staticmethod
-    def print_batters(passed_dict, reverse):
+    def print_batters(self, ed_dict, reverse):
         """
-        Useful function to print a dict of batters that is passed, 'passedDict'
-        :param passed_dict: Dict - Contains a dictionary of batters that need printed
+        Useful function to print a dict of batters that is ed, 'edDict'
+        :param ed_dict: Dict - Contains a dictionary of batters that need printed
         :param reverse: bool - True: Desc, False: Asc
         :return:
         """
-        valueLength = len(list(passed_dict.values())[0])
-        # If passed_dict contains WAR or list length is 11, print with WAR
+        
+        valueLength = len(list(ed_dict.values())[0])
+        # If ed_dict contains WAR or list length is 11, print with WAR
         if valueLength == 11:
             # Created a sorted list of batters, based on their WRC+ in descending order
-            sortedBList = sorted(passed_dict.items(), key=lambda item: item[1][9], reverse=reverse)
+            sortedBList = sorted(ed_dict.items(), key=lambda item: item[1][9], reverse=reverse)
             for i in sortedBList:
                 playerStats = i[1]
                 # If WAR is available, print WAR. If it doesnt then dont include WAR since it cant be calculated
@@ -447,22 +474,21 @@ class League:
                     playerStats[7]) + " wRC/PA: " + str(playerStats[10]) + " wOBA: " + str(playerStats[6]) + " BABIP: " + str(
                     playerStats[3]) + " WAR: " + str(playerStats[8]) + " wRC+: " + str(playerStats[9]))
         else:
-            sortedBList = sorted(passed_dict.items(), key=lambda item: item[1][8], reverse=reverse)
+            sortedBList = sorted(ed_dict.items(), key=lambda item: item[1][8], reverse=reverse)
             for i in sortedBList:
                 playerStats = i[1]
                 print("Name: " + str(i[0]) + " PA: " + str(playerStats[0]) + " wRC: " + str(
                     playerStats[7]) + " wRC/PA: " + str(playerStats[9]) + " wOBA: " + str(playerStats[6]) + " BABIP: " + str(
                     playerStats[3]) + " wRC+: " + str(playerStats[8]))
 
-    @staticmethod
-    def print_pitchers(passed_dict, reverse):
+    def print_pitchers(self, ed_dict, reverse):
         """
-        Useful function to print a dict of pitchers that is passed, 'passedDict'
-        :param passed_dict: Dict - Contains a dictionary of pitchers that need printed
+        Useful function to print a dict of pitchers that is ed, 'edDict'
+        :param ed_dict: Dict - Contains a dictionary of pitchers that need printed
         :param reverse: bool - True: Desc, False: Asc
         :return:
         """
-        sortedPList = sorted(passed_dict.items(), key=lambda item: item[1][6], reverse=reverse)
+        sortedPList = sorted(ed_dict.items(), key=lambda item: item[1][6], reverse=reverse)
         # Created a sorted list of pitchers, based on their FIP in descending order
         for i in sortedPList:
             playerStats = i[1]
@@ -477,8 +503,7 @@ class League:
                     playerStats[2]) + " BF: " + str(playerStats[3]) + " BB%: " + str(playerStats[4]) + " K%: " + str(
                     playerStats[5]) + " FIP: " + str(playerStats[6]) + " ERA: " + str(playerStats[7]) + " WHIP: " + str(playerStats[8]) + " W: " + str(playerStats[11]) + " L: " + str(playerStats[12]) + " SV: " + str(playerStats[13]))
 
-    @staticmethod
-    def get_batters(time, status, qualified):
+    def get_batters(self, time, status, qualified):
         """
         Function to query all batters giving the option for stat desired time range and what batters to include
         :param time: str - "season" || "lastmonth" || "lastweek"
@@ -487,7 +512,6 @@ class League:
         based on the time period selected
         :return: dict of desired batters based on the given status
         """
-
         # Create lists to hold the player id's of your batters, FA batters, rostered batters, and all batters in the league
         faBID = []
         takenBID = []
@@ -502,12 +526,12 @@ class League:
 
         # Add every batter to allBID
         if status == 0:
-            for i in League.lg.taken_players():
+            for i in self.lg.taken_players():
                 if i["position_type"] == "B":
                     takenBID.append(i["player_id"])
-            for i in League.lg.free_agents('B'):
-                    faBID.append(i["player_id"])
-            for i in League.tm.roster(League.lg.current_week()):
+            for i in self.lg.free_agents('B'):
+                faBID.append(i["player_id"])
+            for i in self.tm.roster(self.lg.current_week()):
                 if i["position_type"] == "B":
                     teamBID.append(i["player_id"])
             allBID.append(takenBID)
@@ -515,19 +539,21 @@ class League:
             allBID.append(teamBID)
         # Add every taken batter to allBID
         elif status == 1:
-            for i in League.lg.taken_players():
+            for i in self.lg.taken_players():
                 if i["position_type"] == "B":
                     takenBID.append(i["player_id"])
             allBID.append(takenBID)
         # Add every FA batter to allBID
         elif status == 2:
-            for i in League.lg.free_agents('B'):
+            for i in self.lg.free_agents('B'):
                 if i["position_type"] == "B":
                     faBID.append(i["player_id"])
             allBID.append(faBID)
         # Add every batter on your team to allBID
         else:
-            for i in League.tm.roster(League.lg.current_week()):
+            print("Current week: ", self.lg.current_week())
+            print("Current week roster: ", self.tm.roster())
+            for i in self.tm.roster(self.lg.current_week()):
                 if i["position_type"] == "B":
                     teamBID.append(i["player_id"])
             allBID.append(teamBID)
@@ -540,35 +566,35 @@ class League:
         lastweek = df['Last Week']
 
         # Get the season weights
-        League.obaW = season.loc[0]
-        League.wOBAScale = season.loc[1]
-        League.wBB = season.loc[2]
-        League.wHBP = season.loc[3]
-        League.w1B = season.loc[4]
-        League.w2B = season.loc[5]
-        League.w3B = season.loc[6]
-        League.wHR = season.loc[7]
-        League.rPAW = season.loc[8]
+        self.obaW = season.loc[0]
+        self.wOBAScale = season.loc[1]
+        self.wBB = season.loc[2]
+        self.wHBP = season.loc[3]
+        self.w1B = season.loc[4]
+        self.w2B = season.loc[5]
+        self.w3B = season.loc[6]
+        self.wHR = season.loc[7]
+        self.rPAW = season.loc[8]
 
         # Set the AL and NL PA/WRC stats based on the time period
         if time == "season":
-            League.alPA = season.loc[9]
-            League.alWRC = season.loc[10]
-            League.nlPA = season.loc[11]
-            League.nlWRC = season.loc[12]
+            self.alPA = season.loc[9]
+            self.alWRC = season.loc[10]
+            self.nlPA = season.loc[11]
+            self.nlWRC = season.loc[12]
         elif time == "lastmonth":
-            League.alPA = lastmonth.loc[9]
-            League.alWRC = lastmonth.loc[10]
-            League.nlPA = lastmonth.loc[11]
-            League.nlWRC = lastmonth.loc[12]
+            self.alPA = lastmonth.loc[9]
+            self.alWRC = lastmonth.loc[10]
+            self.nlPA = lastmonth.loc[11]
+            self.nlWRC = lastmonth.loc[12]
         else:
-            League.alPA = lastweek.loc[9]
-            League.alWRC = lastweek.loc[10]
-            League.nlPA = lastweek.loc[11]
-            League.nlWRC = lastweek.loc[12]
+            self.alPA = lastweek.loc[9]
+            self.alWRC = lastweek.loc[10]
+            self.nlPA = lastweek.loc[11]
+            self.nlWRC = lastweek.loc[12]
 
         # Determine whether or not the qualifier is used
-        if qualified == True:
+        if qualified:
             if time == "season":
                 paQualifier = 150
             elif time == "lastmonth":
@@ -581,9 +607,9 @@ class League:
         # For every different list within allBID (up to 3: taken, fa, roster)
         for i in range(0, len(allBID)):
             # Get a list of batter stats given a list of player ids and the desired time range
-            batterStats = League.lg.player_stats(allBID[i], req_type=time)
+            batterStats = self.lg.player_stats(allBID[i], req_type=time)
             # Get a list of all details for a batter, primarily used for their team to get their ballpark factor
-            pD = League.lg.player_details(allBID[i])
+            pD = self.lg.player_details(allBID[i])
             # For every batter in our current list
             for j in range(0, len(batterStats)):
                 playerName = batterStats[j]['name']
@@ -645,9 +671,9 @@ class League:
 
                     # Gets the player's weighted on base average if available using league constants from FanGraphs
                     try:
-                        wOBA = ((League.wBB * float(playerBB)) + (League.wHBP * float(playerHBP)) + (League.w1B * float(player1B)) + (
-                                    League.w2B * float(player2B)) + (
-                                        League.w3B * float(player3B)) + (League.wHR * float(playerHR))) / (
+                        wOBA = ((self.wBB * float(playerBB)) + (self.wHBP * float(playerHBP)) + (self.w1B * float(player1B)) + (
+                                    self.w2B * float(player2B)) + (
+                                        self.w3B * float(player3B)) + (self.wHR * float(playerHR))) / (
                                            playerAB + playerBB - playerIBB + playerSF + playerHBP)
                         wOBA = "{:.3f}".format(wOBA)
                     except:
@@ -662,7 +688,7 @@ class League:
 
                     # Gets the player's number of weighted runs scored
                     try:
-                        wRC = (((float(wOBA) - League.obaW) / League.wOBAScale) + League.rPAW) * float(playerPA)
+                        wRC = (((float(wOBA) - self.obaW) / self.wOBAScale) + self.rPAW) * float(playerPA)
                         wRC = "{:.3f}".format(wRC)
                     except:
                         wRC = 0
@@ -675,18 +701,17 @@ class League:
 
                     # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
                     try:
-                        wRAA = ((float(wOBA) - float(League.obaW)) / float(League.wOBAScale)) * playerPA
-                        playerParkFactor = League.ballParkDict[playerTeam] / 100
+                        wRAA = ((float(wOBA) - float(self.obaW)) / float(self.wOBAScale)) * playerPA
+                        playerParkFactor = self.ballParkDict[playerTeam] / 100
 
-                        if playerTeam in League.nlTeamList:
-                            wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (float(League.nlWRC) / float(League.nlPA))) * 100
+                        if playerTeam in self.nlTeamList:
+                            wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (float(self.nlWRC) / float(self.nlPA))) * 100
                         else:
-                            wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (float(League.alWRC) / float(League.alPA))) * 100
+                            wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (float(self.alWRC) / float(self.alPA))) * 100
                         wRCP = "{:.3f}".format(wRCP)
                     except:
-                        wRAA = 0
                         wRCP = 0
                     # Get the players walk and strikeout percentages
                     try:
@@ -703,13 +728,19 @@ class League:
                     # If time is season, add WAR to dict, otherwise dont
                     if time == "season":
                         playerDict = {
-                playerName: [playerPA, float(bb), float(k), float(BABIP), float(playerAVG), float(playerOPS), float(wOBA),
-                             float(wRC), float(playerWAR), float(wRCP), float(wRCPA)]}
+                            playerName: [
+                                playerPA, float(bb), float(k), float(BABIP),
+                                float(playerAVG), float(playerOPS), float(wOBA),
+                                float(wRC), float(playerWAR), float(wRCP), float(wRCPA)
+                            ]
+                        }
                     else:
                         playerDict = {
-                            playerName: [playerPA, float(bb), float(k), float(BABIP), float(playerAVG),
-                                         float(playerOPS), float(wOBA),
-                                         float(wRC), float(wRCP), float(wRCPA)]}
+                            playerName: [
+                                playerPA, float(bb), float(k), float(BABIP), float(playerAVG),
+                                float(playerOPS), float(wOBA), float(wRC), float(wRCP), float(wRCPA)
+                            ]
+                        }
 
                     # Add the player to their respective dictionary
                     if status == 1:
@@ -735,8 +766,7 @@ class League:
         else:
             return teamBatterDict
 
-    @staticmethod
-    def get_batter(time, player_id):
+    def get_batter(self, time, player_id):
         """
         Function to query a batter giving the option for stat desired time range
         :param time: str - "season" || "lastmonth" || "lastweek"
@@ -744,9 +774,9 @@ class League:
         :return: dict of desired batters based on the given status
         """
         # Get a list of batter stats given a player id and the desired time range
-        batterStats = League.lg.player_stats(player_id, req_type=time)
+        batterStats = self.lg.player_stats(player_id, req_type=time)
         # Get a list of all details for a batter, primarily used for their team to get their ballpark factor
-        pD = League.lg.player_details(int(player_id))
+        pD = self.lg.player_details(int(player_id))
 
         # Read in leagueConstants as a data frame
         df = pd.read_csv("leagueConstants.csv")
@@ -756,32 +786,32 @@ class League:
         lastweek = df['Last Week']
 
         # Get the season weights
-        League.obaW = season.loc[0]
-        League.wOBAScale = season.loc[1]
-        League.wBB = season.loc[2]
-        League.wHBP = season.loc[3]
-        League.w1B = season.loc[4]
-        League.w2B = season.loc[5]
-        League.w3B = season.loc[6]
-        League.wHR = season.loc[7]
-        League.rPAW = season.loc[8]
+        self.obaW = season.loc[0]
+        self.wOBAScale = season.loc[1]
+        self.wBB = season.loc[2]
+        self.wHBP = season.loc[3]
+        self.w1B = season.loc[4]
+        self.w2B = season.loc[5]
+        self.w3B = season.loc[6]
+        self.wHR = season.loc[7]
+        self.rPAW = season.loc[8]
 
         # Set the AL and NL PA/WRC stats based on the time period
         if time == "season":
-            League.alPA = season.loc[9]
-            League.alWRC = season.loc[10]
-            League.nlPA = season.loc[11]
-            League.nlWRC = season.loc[12]
+            self.alPA = season.loc[9]
+            self.alWRC = season.loc[10]
+            self.nlPA = season.loc[11]
+            self.nlWRC = season.loc[12]
         elif time == "lastmonth":
-            League.alPA = lastmonth.loc[9]
-            League.alWRC = lastmonth.loc[10]
-            League.nlPA = lastmonth.loc[11]
-            League.nlWRC = lastmonth.loc[12]
+            self.alPA = lastmonth.loc[9]
+            self.alWRC = lastmonth.loc[10]
+            self.nlPA = lastmonth.loc[11]
+            self.nlWRC = lastmonth.loc[12]
         else:
-            League.alPA = lastweek.loc[9]
-            League.alWRC = lastweek.loc[10]
-            League.nlPA = lastweek.loc[11]
-            League.nlWRC = lastweek.loc[12]
+            self.alPA = lastweek.loc[9]
+            self.alWRC = lastweek.loc[10]
+            self.nlPA = lastweek.loc[11]
+            self.nlWRC = lastweek.loc[12]
 
         playerName = batterStats[0]['name']
 
@@ -839,10 +869,10 @@ class League:
 
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
-            wOBA = ((League.wBB * float(playerBB)) + (League.wHBP * float(playerHBP)) + (
-                        League.w1B * float(player1B)) + (
-                            League.w2B * float(player2B)) + (
-                            League.w3B * float(player3B)) + (League.wHR * float(playerHR))) / (
+            wOBA = ((self.wBB * float(playerBB)) + (self.wHBP * float(playerHBP)) + (
+                        self.w1B * float(player1B)) + (
+                            self.w2B * float(player2B)) + (
+                            self.w3B * float(player3B)) + (self.wHR * float(playerHR))) / (
                            playerAB + playerBB - playerIBB + playerSF + playerHBP)
             wOBA = "{:.3f}".format(wOBA)
         except:
@@ -857,7 +887,7 @@ class League:
 
         # Gets the player's number of weighted runs scored
         try:
-            wRC = (((float(wOBA) - League.obaW) / League.wOBAScale) + League.rPAW) * float(playerPA)
+            wRC = (((float(wOBA) - self.obaW) / self.wOBAScale) + self.rPAW) * float(playerPA)
             wRC = "{:.3f}".format(wRC)
         except:
             wRC = 0
@@ -870,20 +900,19 @@ class League:
 
         # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
         try:
-            wRAA = ((float(wOBA) - float(League.obaW)) / float(League.wOBAScale)) * playerPA
-            playerParkFactor = League.ballParkDict[playerTeam] / 100
+            wRAA = ((float(wOBA) - float(self.obaW)) / float(self.wOBAScale)) * playerPA
+            playerParkFactor = self.ballParkDict[playerTeam] / 100
 
-            if playerTeam in League.nlTeamList:
-                wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (
-                                    float(League.nlWRC) / float(League.nlPA))) * 100
+            if playerTeam in self.nlTeamList:
+                wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (
+                                    float(self.nlWRC) / float(self.nlPA))) * 100
             else:
-                wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (
-                                    float(League.alWRC) / float(League.alPA))) * 100
+                wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (
+                                    float(self.alWRC) / float(self.alPA))) * 100
                 wRCP = "{:.3f}".format(wRCP)
         except:
-            wRAA = 0
             wRCP = 0
 
         # Get the players walk and strikeout percentages
@@ -909,9 +938,7 @@ class League:
                              float(wOBA),
                              float(wRC), float(wRCP), float(wRCPA)]}
 
-
-    @staticmethod
-    def get_pitcher(time, player_id):
+    def get_pitcher(self, time, player_id):
         """
         Function to query a pitcher given an id, with the option for stat desired time range
         :param time: str - "season" || "lastmonth" || "lastweek"
@@ -919,7 +946,7 @@ class League:
         :return: desired pitcher's stats in the form of a dict
         """
         # Get a list of pitcher stats given player's id and the desired time range
-        pitcherStats = League.lg.player_stats(player_id, req_type=time)
+        pitcherStats = self.lg.player_stats(player_id, req_type=time)
 
         playerName = pitcherStats[0]['name']
 
@@ -995,8 +1022,8 @@ class League:
         try:
             FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(
                 playerIP)
-            # Constant is the league average FPI score for 2021
-            FIP = float(FIP) + float(League.FIP_Constant)
+            # Constant is the league average FPI score for year
+            FIP = float(FIP) + float(self.FIP_Constant)
         except:
             FIP = 0
 
@@ -1014,9 +1041,7 @@ class League:
                              float(FIP), float(playerERA), float(playerWHIP), float(strikeouts),
                              float(playerHR), float(playerWin), float(playerLoss), float(playerSV)]}
 
-
-    @staticmethod
-    def get_pitchers(time, status, qualified):
+    def get_pitchers(self, time, status, qualified):
         """
         Function to query all pitchers giving the option for stat desired time range and what pitchers to include
         :param time: str - "season" || "lastmonth" || "lastweek"
@@ -1039,12 +1064,12 @@ class League:
 
         # Add every batter to allPID
         if status == 0:
-            for i in League.lg.taken_players():
+            for i in self.lg.taken_players():
                 if i["position_type"] == "P":
                     takenPID.append(i["player_id"])
-            for i in League.lg.free_agents('P'):
-                    faPID.append(i["player_id"])
-            for i in League.tm.roster(League.lg.current_week()):
+            for i in self.lg.free_agents('P'):
+                faPID.append(i["player_id"])
+            for i in self.tm.roster(self.lg.current_week()):
                 if i["position_type"] == "P":
                     teamPID.append(i["player_id"])
             allPID.append(takenPID)
@@ -1052,18 +1077,18 @@ class League:
             allPID.append(teamPID)
         # Add every taken pitcher to allPID
         elif status == 1:
-            for i in League.lg.taken_players():
+            for i in self.lg.taken_players():
                 if i["position_type"] == "P":
                     takenPID.append(i["player_id"])
             allPID.append(takenPID)
         # Add every FA pitcher to allPID
         elif status == 2:
-            for i in League.lg.free_agents('P'):
+            for i in self.lg.free_agents('P'):
                 faPID.append(i["player_id"])
             allPID.append(faPID)
         # Add every pitcher on your team to allPID
         else:
-            for i in League.tm.roster(League.lg.current_week()):
+            for i in self.tm.roster(self.lg.current_week()):
                 if i["position_type"] == "P":
                     teamPID.append(i["player_id"])
             allPID.append(teamPID)
@@ -1071,7 +1096,7 @@ class League:
         # For every different list within allPID (up to 3: taken, fa, roster)
         for i in range(0, len(allPID)):
             # Get a list of pitcher stats given a list of player ids and the desired time range
-            pitcherStats = League.lg.player_stats(allPID[i], req_type=time)
+            pitcherStats = self.lg.player_stats(allPID[i], req_type=time)
 
             for j in range(0, len(pitcherStats)):
                 playerName = pitcherStats[j]['name']
@@ -1157,19 +1182,27 @@ class League:
                     # Calculate the FIP score if possible
                     try:
                         FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(playerIP)
-                        # Constant is the league average FPI score for 2021
-                        FIP = float(FIP) + float(League.FIP_Constant)
+                        # Constant is the league average FPI score for year
+                        FIP = float(FIP) + float(self.FIP_Constant)
                     except:
                         FIP = 0
                     FIP = "{:.3f}".format(FIP)
 
                     # If time is season, add WAR to dict, otherwise dont
                     if time == "season":
-                        playerDict = {playerName: [playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA, playerWHIP,
-                        playerWAR, strikeouts, playerHR, playerWin, playerLoss, playerSV]}
+                        playerDict = {
+                            playerName: [
+                                playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA,
+                                playerWHIP, playerWAR, strikeouts, playerHR, playerWin, playerLoss, playerSV
+                            ]
+                        }
                     else:
-                        playerDict = {playerName: [playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA, playerWHIP,
-                        strikeouts, playerHR, playerWin, playerLoss, playerSV]}
+                        playerDict = {
+                            playerName: [
+                                playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA,
+                                playerWHIP, strikeouts, playerHR, playerWin, playerLoss, playerSV
+                            ]
+                        }
 
                     # Add the player to their respective dictionary
                     if status == 1:
@@ -1195,9 +1228,8 @@ class League:
         else:
             return teamPitcherDict
 
-
-    @staticmethod
-    def get_all_players(time, qualified):
+    def get_all_players(self, time, qualified):
+        
         """
         Displays every single player in the yahoo league based on the time period
         and determines whether players need to meet certain qualifications to be considered
@@ -1206,35 +1238,34 @@ class League:
         period selected
         :return:
         """
-        teamPitchers = League.get_pitchers(time, 3, qualified)
-        teamBatters = League.get_batters(time, 3, qualified)
+        teamPitchers = self.get_pitchers(time, 3, qualified)
+        teamBatters = self.get_batters(time, 3, qualified)
 
         print("All pitchers currently on your team:")
-        League.print_pitchers(teamPitchers, False)
+        self.print_pitchers(teamPitchers, False)
 
         print("All batters currently on your team:")
-        League.print_batters(teamBatters, True)
+        self.print_batters(teamBatters, True)
 
-        takenPitchers = League.get_pitchers(time, 1, qualified)
-        takenBatters = League.get_batters(time, 1, qualified)
+        takenPitchers = self.get_pitchers(time, 1, qualified)
+        takenBatters = self.get_batters(time, 1, qualified)
 
         print("All pitchers currently on teams:")
-        League.print_pitchers(takenPitchers, False)
+        self.print_pitchers(takenPitchers, False)
 
         print("All batters currently on teams:")
-        League.print_batters(takenBatters, True)
+        self.print_batters(takenBatters, True)
 
-        faPitchers = League.get_pitchers(time, 2, qualified)
-        faBatters = League.get_batters(time, 2, qualified)
+        faPitchers = self.get_pitchers(time, 2, qualified)
+        faBatters = self.get_batters(time, 2, qualified)
 
         print("All free-agent pitchers")
-        League.print_pitchers(faPitchers, False)
+        self.print_pitchers(faPitchers, False)
 
         print("All free-agent batters")
-        League.print_batters(faBatters, True)
+        self.print_batters(faBatters, True)
 
-    @staticmethod
-    def pitcher_career_stats(player_name):
+    def pitcher_career_stats(self, player_name):
         """
         Return's a pitcher's career statistics given a name
         :param player_name: str - Name of player to be analyzed
@@ -1304,8 +1335,8 @@ class League:
         try:
             FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(
                 playerIP)
-            # Constant is the league average FPI score for 2021
-            FIP = float(FIP) + float(League.FIP_Constant)
+            # Constant is the league average FPI score for year
+            FIP = float(FIP) + float(self.FIP_Constant)
         except:
             FIP = 0
 
@@ -1313,12 +1344,14 @@ class League:
 
         # Return the desired pitcher
         return {
-            player_name: [float(playerID), float(playerGames), float(playerIP), float(playerBF), float(bb), float(kP),
-                         float(FIP), float(playerERA), float(playerWHIP), float(strikeouts),
-                         float(playerHR), float(playerWin), float(playerLoss), float(playerSV)]}
+            player_name: [
+                float(playerID), float(playerGames), float(playerIP), float(playerBF), float(bb), float(kP),
+                float(FIP), float(playerERA), float(playerWHIP), float(strikeouts),
+                float(playerHR), float(playerWin), float(playerLoss), float(playerSV)
+            ]
+        }
 
-    @staticmethod
-    def batter_career_stats(player_name):
+    def batter_career_stats(self, player_name):
         """
         Return's a batter's career statistics given a name
         :param player_name: str - Name of player to be analyzed
@@ -1368,10 +1401,10 @@ class League:
 
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
-            wOBA = ((League.wBB * float(playerBB)) + (League.wHBP * float(playerHBP)) + (
-                        League.w1B * float(player1B)) + (
-                            League.w2B * float(player2B)) + (
-                            League.w3B * float(player3B)) + (League.wHR * float(playerHR))) / (
+            wOBA = ((self.wBB * float(playerBB)) + (self.wHBP * float(playerHBP)) + (
+                        self.w1B * float(player1B)) + (
+                            self.w2B * float(player2B)) + (
+                            self.w3B * float(player3B)) + (self.wHR * float(playerHR))) / (
                            playerAB + playerBB - playerIBB + playerSF + playerHBP)
             wOBA = "{:.3f}".format(wOBA)
         except:
@@ -1398,19 +1431,18 @@ class League:
             wRCPA = 0
         # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
         try:
-            wRAA = ((float(wOBA) - float(League.obaW)) / float(League.wOBAScale)) * playerPA
-            playerParkFactor = League.ballParkDict[playerTeam] / 100
+            wRAA = ((float(wOBA) - float(self.obaW)) / float(self.wOBAScale)) * playerPA
+            playerParkFactor = self.ballParkDict[playerTeam] / 100
 
-            if playerTeam in League.nlTeamList:
-                wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (
-                                    float(League.nlWRC) / float(League.nlPA))) * 100
+            if playerTeam in self.nlTeamList:
+                wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (
+                                    float(self.nlWRC) / float(self.nlPA))) * 100
             else:
-                wRCP = ((((float(wRAA) / float(playerPA)) + float(League.rPAW)) + (
-                        float(League.rPAW) - (float(playerParkFactor) * float(League.rPAW)))) / (
-                                    float(League.alWRC) / float(League.alPA))) * 100
+                wRCP = ((((float(wRAA) / float(playerPA)) + float(self.rPAW)) + (
+                        float(self.rPAW) - (float(playerParkFactor) * float(self.rPAW)))) / (
+                                    float(self.alWRC) / float(self.alPA))) * 100
         except:
-            wRAA = 0
             wRCP = 0
         # Get the players walk and strikeout percentages
         try:
@@ -1425,11 +1457,13 @@ class League:
             k = 0
         # Return the desired player
         return {
-            player_name: [playerPA, float(bb), float(k), float(BABIP), float(playerAVG), float(playerOPS), float(wOBA),
-                         float(wRC), float(wRCP), float(wRCPA)]}
+            player_name: [
+                playerPA, float(bb), float(k), float(BABIP), float(playerAVG),
+                float(playerOPS), float(wOBA), float(wRC), float(wRCP), float(wRCPA)
+            ]
+        }
 
-    @staticmethod
-    def outlier(player_name, status):
+    def outlier(self, player_name, status):
         """
         Displays whether a player is currently over or under-achieving
         comparing their current season statistics with their career statistics
@@ -1437,11 +1471,13 @@ class League:
         :param status: int - 0 == batter, 1 == pitcher
         :return:
         """
-        currentSeasonStats = League.get_player(player_name, "season")
+        currentSeasonStats = self.get_player(player_name, "season")
         if status == 0:
-            careerStats = League.batter_career_stats(player_name)
-            League.print_batters(currentSeasonStats, reverse=True)
-            League.print_batters(careerStats, reverse=True)
+            careerStats = self.batter_career_stats(player_name)
+            print("Current Season Stats")
+            self.print_batters(currentSeasonStats, reverse=True)
+            print("Career Stats")
+            self.print_batters(careerStats, reverse=True)
 
             currentWRCPA = list(currentSeasonStats.values())[0][-1]
             currentWOBA = list(currentSeasonStats.values())[0][6]
@@ -1490,9 +1526,11 @@ class League:
                 print("Currently underacheiving based on the following categories:")
             print("wRC/PA, wOBA, wRC+")
         else:
-            careerStats = League.pitcher_career_stats(player_name)
-            League.print_pitchers(currentSeasonStats, reverse=True)
-            League.print_pitchers(careerStats, reverse=True)
+            careerStats = self.pitcher_career_stats(player_name)
+            print("Current Season Stats")
+            self.print_pitchers(currentSeasonStats, reverse=True)
+            print("Career Stats")
+            self.print_pitchers(careerStats, reverse=True)
 
             currentFIP = list(currentSeasonStats.values())[0][6]
             currentERA = list(currentSeasonStats.values())[0][7]
@@ -1566,8 +1604,7 @@ class League:
                 print("Currently underacheiving based on the following categories:")
             print("FIP, ERA, WHIP, K%, BB%")
 
-    @staticmethod
-    def whos_hot(time):
+    def whos_hot(self, time):
         """
         Displays the 10 best qualified free agent / taken pitchers and batters
         over the desired time period based on FIP and WRC+
@@ -1575,29 +1612,28 @@ class League:
         :return:
         """
         # Print top 10 pitcher free agents and taken players
-        ttRP = dict(list(League.get_pitchers(time, 1, qualified=True).items()))
+        ttRP = dict(list(self.get_pitchers(time, 1, qualified=True).items()))
         hotPList = dict(sorted(ttRP.items(), key=lambda item: item[1][6])[0:10])
         print("\n" + "Top 10 Hottest Rostered Pitchers: ")
-        League.print_pitchers(hotPList, reverse=False)
+        self.print_pitchers(hotPList, reverse=False)
 
-        ttFAP = dict(list(League.get_pitchers(time, 2, qualified=True).items()))
+        ttFAP = dict(list(self.get_pitchers(time, 2, qualified=True).items()))
         hotPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1][6])[0:10])
         print("\n" + "Top 10 Hottest Free Agent Pitchers: ")
-        League.print_pitchers(hotPList2, reverse=False)
+        self.print_pitchers(hotPList2, reverse=False)
 
         # Print top 10 batter free agents and taken players
-        ttRB = dict(list(League.get_batters(time, 1, qualified=True).items()))
+        ttRB = dict(list(self.get_batters(time, 1, qualified=True).items()))
         hotBList = dict(sorted(ttRB.items(), key=lambda item: item[1][6], reverse=True)[0:10])
         print("\n" + "Top 10 Hottest Rostered Batters: ")
-        League.print_batters(hotBList, reverse=True)
+        self.print_batters(hotBList, reverse=True)
 
-        ttFAB = dict(list(League.get_batters(time, 2, qualified=True).items()))
+        ttFAB = dict(list(self.get_batters(time, 2, qualified=True).items()))
         hotBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1][6], reverse=True)[0:10])
         print("\n" + "Top 10 Hottest Free Agent Batters: ")
-        League.print_batters(hotBList2, reverse=True)
+        self.print_batters(hotBList2, reverse=True)
 
-    @staticmethod
-    def whos_cold(time):
+    def whos_cold(self, time):
         """
         Displays the 10 worst qualified free agent / taken pitchers and batters
         over the desired time period based on FIP and WRC+
@@ -1605,23 +1641,23 @@ class League:
         :return:
         """
         # Print top 10 worst pitcher free agents and taken players
-        ttRP = dict(list(League.get_pitchers(time, 1, qualified=True).items()))
+        ttRP = dict(list(self.get_pitchers(time, 1, qualified=True).items()))
         coldPList = dict(sorted(ttRP.items(), key=lambda item: item[1][6], reverse=True)[0:10])
         print("\n" + "Top 10 Coldest Rostered Pitchers: ")
-        League.print_pitchers(coldPList, reverse=True)
+        self.print_pitchers(coldPList, reverse=True)
 
-        ttFAP = dict(list(League.get_pitchers(time, 2, qualified=True).items()))
+        ttFAP = dict(list(self.get_pitchers(time, 2, qualified=True).items()))
         coldPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1][6], reverse=True)[0:10])
         print("\n" + "Top 10 Coldest Free Agent Pitchers: ")
-        League.print_pitchers(coldPList2, reverse=True)
+        self.print_pitchers(coldPList2, reverse=True)
 
         # Print top 10 worst batter free agents and taken players
-        ttRB = dict(list(League.get_batters(time, 1, qualified=True).items()))
+        ttRB = dict(list(self.get_batters(time, 1, qualified=True).items()))
         coldBList = dict(sorted(ttRB.items(), key=lambda item: item[1][6])[0:10])
         print("\n" + "Top 10 Coldest Rostered Batters: ")
-        League.print_batters(coldBList, reverse=False)
+        self.print_batters(coldBList, reverse=False)
 
-        ttFAB = dict(list(League.get_batters(time, 2, qualified=True).items()))
+        ttFAB = dict(list(self.get_batters(time, 2, qualified=True).items()))
         coldBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1][6])[0:10])
         print("\n" + "Top 10 Coldest Free Agent Batters: ")
-        League.print_batters(coldBList2, reverse=False)
+        self.print_batters(coldBList2, reverse=False)
