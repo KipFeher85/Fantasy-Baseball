@@ -21,41 +21,27 @@ Python Module Usage
 
 ::
 
-  In [1]: from yahoo_oauth import OAuth2
+  In [1]: from yahoo_fb_stat_analysis import main as yfbsa
 
-  In [2]: import yahoo_fantasy_api as yfa
+  In [2]: lgObj = yfbsa.League(year=2022)
 
-  In [3]: import json
+  In [3]: lgObj.update_league_constants()
 
-  In [4]: import csv
+  In [4]: lgObj.update_ballpark_constants()
 
-  In [5]: import pandas as pd
-
-  In [6]: from datetime import date
-
-  In [7]: from dateutil.relativedelta import relativedelta
-
-  In [8]: from yahoo_fb_stat_analysis import main as yfbsa
-
-  In [9]: lgObj = yfbsa.League(year=2022)
-
-  In [10]: lgObj.update_league_constants()
-
-  In [11]: lgObj.update_ballpark_constants()
-
-  In [12]: lgObj.starter()
+  In [5]: lgObj.starter()
 
   # Get Shane McClanahan's stats over the past month
-  In [13]: shane = lgObj.getPlayer("Shane McClanahan", "lastmonth")
-  Out[13]: {'Shane McClanahan': [11398.0, 5.0, 32.0, 122.0, 3.279, 31.967, 3.133, 1.41, 0.81, 39.0, 5.0, 3.0, 1.0, 0.0]}
+  In [6]: shane = lgObj.getPlayer("Shane McClanahan", "lastmonth")
+  Out[6]: {'Shane McClanahan': [11398.0, 5.0, 32.0, 122.0, 3.279, 31.967, 3.133, 1.41, 0.81, 39.0, 5.0, 3.0, 1.0, 0.0]}
 
   # Display Trey Mancini's stats over the season
-  In [14]: lgObj.print_player("Trey Mancini", "season")
-  Out[14]: Name: Trey Mancini PA: 280.0 wRC: 41.822 wRC/PA: 0.149 wOBA: 0.349 BABIP: 0.339 WAR: 1.0 wRC+: 120.682
+  In [7]: lgObj.print_player("Trey Mancini", "season")
+  Out[7]: Name: Trey Mancini PA: 280.0 wRC: 41.822 wRC/PA: 0.149 wOBA: 0.349 BABIP: 0.339 WAR: 1.0 wRC+: 120.682
 
   # Display your current roster's stats over the season
-  In [15]: lgObj.current_roster_stats("season")
-  Out[15]:
+  In [8]: lgObj.current_roster_stats("season")
+  Out[8]:
   Your batters:
   Current week:  11
   Current week roster:  [{'player_id': 11732, 'name': 'Adley Rutschman', 'status': '', 'position_type': 'B', 'eligible_positions': ['C', 'Util'], 'selected_position': 'C'}, {'player_id': 9605, 'name': 'Matt Olson', 'status': '', 'position_type': 'B', 'eligible_positions': ['1B', 'Util'], 'selected_position': '1B'}, {'player_id': 9112, 'name': 'Jurickson Profar', 'status': '', 'position_type': 'B', 'eligible_positions': ['1B', '2B', 'OF', 'Util'], 'selected_position': '2B'}, {'player_id': 11771, 'name': 'Bobby Witt Jr.', 'status': '', 'position_type': 'B', 'eligible_positions': ['3B', 'SS', 'Util'], 'selected_position': '3B'}, {'player_id': 10233, 'name': 'Amed Rosario', 'status': '', 'position_type': 'B', 'eligible_positions': ['SS', 'OF', 'Util'], 'selected_position': 'OF'}, {'player_id': 10429, 'name': 'Ryan Mountcastle', 'status': '', 'position_type': 'B', 'eligible_positions': ['1B', 'OF', 'Util'], 'selected_position': 'OF'}, {'player_id': 11391, 'name': 'Nolan Gorman', 'status': '', 'position_type': 'B', 'eligible_positions': ['2B', '3B', 'Util'], 'selected_position': 'Util'}, {'player_id': 9846, 'name': 'Christian Walker', 'status': '', 'position_type': 'B', 'eligible_positions': ['1B', 'Util'], 'selected_position': 'Util'}, {'player_id': 11370, 'name': 'Oneil Cruz', 'status': '', 'position_type': 'B', 'eligible_positions': ['SS', 'Util'], 'selected_position': 'BN'}, {'player_id': 9553, 'name': 'Albert Almora Jr.', 'status': '', 'position_type': 'B', 'eligible_positions': ['OF', 'Util'], 'selected_position': 'BN'}, {'player_id': 10883, 'name': 'Yordan Alvarez', 'status': '', 'position_type': 'B', 'eligible_positions': ['OF', 'Util'], 'selected_position': 'BN'}, {'player_id': 10839, 'name': 'Jazz Chisholm Jr.', 'status': '', 'position_type': 'B', 'eligible_positions': ['2B', 'SS', 'Util'], 'selected_position': 'BN'}, {'player_id': 11292, 'name': 'Jonathan India', 'status': 'DTD', 'position_type': 'B', 'eligible_positions': ['2B', 'Util'], 'selected_position': 'BN'}, {'player_id': 11398, 'name': 'Shane McClanahan', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'SP'}, {'player_id': 12281, 'name': 'Spencer Strider', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'RP', 'P'], 'selected_position': 'SP'}, {'player_id': 8287, 'name': 'David Robertson', 'status': '', 'position_type': 'P', 'eligible_positions': ['RP', 'P'], 'selected_position': 'RP'}, {'player_id': 10432, 'name': 'Tanner Scott', 'status': '', 'position_type': 'P', 'eligible_positions': ['RP', 'P'], 'selected_position': 'RP'}, {'player_id': 9620, 'name': 'Max Fried', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'P'}, {'player_id': 10462, 'name': 'Triston McKenzie', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'P'}, {'player_id': 11854, 'name': 'Alek Manoah', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'P'}, {'player_id': 11381, 'name': 'Logan Gilbert', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'P'}, {'player_id': 9121, 'name': 'Gerrit Cole', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'BN'}, {'player_id': 10940, 'name': 'MacKenzie Gore', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'BN'}, {'player_id': 10934, 'name': 'Shane Baz', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'BN'}, {'player_id': 10909, 'name': 'Trevor Rogers', 'status': '', 'position_type': 'P', 'eligible_positions': ['SP', 'P'], 'selected_position': 'BN'}, {'player_id': 10456, 'name': 'Tyler Stephenson', 'status': 'IL10', 'position_type': 'B', 'eligible_positions': ['C', '1B', 'Util', 'IL'], 'selected_position': 'IL'}, {'player_id': 10423, 'name': 'Mike Soroka', 'status': 'IL60', 'position_type': 'P', 'eligible_positions': ['SP', 'P', 'IL'], 'selected_position': 'IL'}, {'player_id': 11378, 'name': 'Esteury Ruiz', 'status': 'NA', 'position_type': 'B', 'eligible_positions': ['2B', 'Util', 'NA'], 'selected_position': 'NA'}]
@@ -69,8 +55,8 @@ Python Module Usage
   ....
 
   # Get the basic info for all the players on your current roster
-  In [16]: lgObj.current_roster_basic()
-  Out[16]:
+  In [9]: lgObj.current_roster_basic()
+  Out[9]:
   Hitter List:
   {'player_id': 11732, 'name': 'Adley Rutschman', 'status': '', 'position_type': 'B', 'eligible_positions': ['C', 'Util'], 'selected_position': 'C'}
   {'player_id': 9605, 'name': 'Matt Olson', 'status': '', 'position_type': 'B', 'eligible_positions': ['1B', 'Util'], 'selected_position': '1B'}
@@ -87,15 +73,15 @@ Python Module Usage
   ....
 
   # Get details for every team in your league
-  In [17]: lgObj.teamDetails()
-  Out[17]:
+  In [10]: lgObj.teamDetails()
+  Out[10]:
   [('team_key', 'team's key'), ('team_id', '10'), ('name', 'Name A'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'url'}}]), ('waiver_priority', 10), ('number_of_moves', '21'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '1'}), ('league_scoring_type', 'head'), ('draft_position', 2), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '10', 'nickname': 'Mr. X', 'guid': 'B3QNT4MWWQDXZS3J7HDPCDPWVU', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '658', 'felo_tier': 'silver'}}])]
   [('team_key', 'team's key'), ('team_id', '12'), ('name', 'Name B'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'url'}}]), ('waiver_priority', 12), ('number_of_moves', '16'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '0'}), ('league_scoring_type', 'head'), ('draft_position', 3), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '12', 'nickname': 'Mr. Y', 'guid': 'JLUKFLTAHXRTWF46MW3YLFKE3E', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '668', 'felo_tier': 'silver'}}])]
   ....
 
   # Display every game's matchup, pitcher stats over the past month, your batters stats over the past week, and a note if available
-  In [18]: lgObj.predictTeamDay()
-  Out[18]:
+  In [11]: lgObj.predictTeamDay()
+  Out[11]:
   Game 1: New York Mets at Miami Marlins
   Pitcher Stats over the past month
   HP: Daniel Castano IP: 10.0 BF: 46.0 BB%: 10.87 K%: 13.043 FIP: 5.064 ERA: 3.6 WHIP: 1.7 K: 1.0 HR: 0.0
@@ -124,29 +110,29 @@ Python Module Usage
   ....
 
   # Get a dict of all the batters currently on the wire with their stats over the past month only considering qualified batters
-  In [19]: faBatters = lgObj.get_batters('lastmonth', status=2, qualified=True)
-  Out[19]: {'Albert Pujols': [63.0, 5.0, 16.667, 0.267, 0.283, 0.884, 0.376, 10.779, 0.0, 97.580, 0.171] .... }
+  In [12]: faBatters = lgObj.get_batters('lastmonth', status=2, qualified=True)
+  Out[12]: {'Albert Pujols': [63.0, 5.0, 16.667, 0.267, 0.283, 0.884, 0.376, 10.779, 0.0, 97.580, 0.171] .... }
 
   # Display all qualified batters currently on the wire with their stats over the past month
-  In [20]: lgObj.print_batters(faBatters, reverse=True)
-  Out[20]:
+  In [13]: lgObj.print_batters(faBatters, reverse=True)
+  Out[13]:
   Name: Luis Torrens PA: 9.0 wRC: 3.835 wRC/PA: 0.426 wOBA: 0.693 BABIP: 0.333 wRC+: 127.428
   Name: Luis Rengifo PA: 4.0 wRC: 0.897 wRC/PA: 0.224 wOBA: 0.442 BABIP: 0.667 wRC+: 118.299
   ....
 
   # Get a dict of all the pitchers currently on the wire with their stats over the past month only considering qualified pitchers
-  In [21]: takenPitchers = lgObj.get_pitchers('lastmonth', status=1, qualified=True)
-  Out[21]: {'Adam Wainwright': [7048, 8.0, 32.0, 131.0, '9.160', '24.427', '3.102', 2.53, 1.19, 32.0, 2.0, 3.0, 0.0, 0.0], ....}
+  In [14]: takenPitchers = lgObj.get_pitchers('lastmonth', status=1, qualified=True)
+  Out[14]: {'Adam Wainwright': [7048, 8.0, 32.0, 131.0, '9.160', '24.427', '3.102', 2.53, 1.19, 32.0, 2.0, 3.0, 0.0, 0.0], ....}
 
   # Display all qualified pitchers currently on the wire with their stats over the past month
-  In [22]: lgObj.print_pitchers(takenPitchers, reverse=False)
-  Out[22]:
+  In [15]: lgObj.print_pitchers(takenPitchers, reverse=False)
+  Out[15]:
   Name: Ryan Pressly GS: 12.0 IP: 12.0 BF: 40.0 BB%: 0.000 K%: 52.500 FIP: -0.336 ERA: 0.0 WHIP: 0.33 W: 2.0 L: 0.0 SV: 6.0
   Name: Paul Sewald GS: 13.0 IP: 12.2 BF: 45.0 BB%: 6.667 K%: 48.889 FIP: 0.295 ERA: 0.0 WHIP: 0.47 W: 3.0 L: 0.0 SV: 2.0
 
   # Display whether a player is currently over-achieving or under-achieving
-  In [23]: lgObj.outlier("Shane McClanahan", 1)
-  Out[23]:
+  In [16]: lgObj.outlier("Shane McClanahan", 1)
+  Out[16]:
   Current Season Stats
   Name: Shane McClanahan GS: 14.0 IP: 84.1 BF: 320.0 BB%: 5.0 K%: 35.312 FIP: 2.784 ERA: 1.81 WHIP: 0.85 WAR: 2.2 W: 7.0 L: 3.0 SV: 0.0
   Career Stats
@@ -162,8 +148,8 @@ Python Module Usage
   # Display the top 10 hottest batter and pitchers both rostered and on the wire over the season
   # Batters sorted by wRC+ descending
   # Pitchers sorted by FIP ascending
-  In [24]: lgObj.whos_hot("season")
-  Out[24]:
+  In [17]: lgObj.whos_hot("season")
+  Out[17]:
   Top 10 Hottest Rostered Pitchers:
   Name: Jason Adam GS: 32.0 IP: 29.2 BF: 107.0 BB%: 7.477 K%: 29.907 FIP: 2.000 ERA: 1.21 WHIP: 0.67 WAR: 0.8 W: 1.0 L: 2.0 SV: 2.0
   Name: Seranthony Domínguez GS: 29.0 IP: 27.2 BF: 104.0 BB%: 6.731 K%: 33.654 FIP: 1.951 ERA: 1.63 WHIP: 0.83 WAR: 0.8 W: 4.0 L: 1.0 SV: 2.0
@@ -187,8 +173,8 @@ Python Module Usage
   # Display the top 10 coldest batter and pitchers both rostered and on the wire over the season
   # Batters sorted by wRC+ ascending
   # Pitchers sorted by FIP descending
-  In [25]: lgObj.whos_cold("season")
-  Out[25]:
+  In [18]: lgObj.whos_cold("season")
+  Out[18]:
   Top 10 Coldest Rostered Pitchers:
   Name: Hunter Greene GS: 14.0 IP: 70.0 BF: 305.0 BB%: 9.836 K%: 28.852 FIP: 5.735 ERA: 5.66 WHIP: 1.36 WAR: 0.0 W: 3.0 L: 8.0 SV: 0.0
   Name: Beau Brieske GS: 11.0 IP: 59.2 BF: 247.0 BB%: 6.883 K%: 16.599 FIP: 5.495 ERA: 4.07 WHIP: 1.21 WAR: -0.3 W: 1.0 L: 6.0 SV: 0.0
@@ -209,8 +195,8 @@ Python Module Usage
   Name: Kevin Newman PA: 319.0 wRC: 17.985 wRC/PA: 0.056 wOBA: 0.235 BABIP: 0.217 WAR: 1.0 wRC+: 48.883
   ....
 
-  In [26]: lgObj.get_all_players('lastmonth')
-  Out[26]:
+  In [19]: lgObj.get_all_players('lastmonth')
+  Out[19]:
   All pitchers currently on your team:
   Name: Chad Green GS: 9.0 IP: 13.2 BF: 50.0 BB%: 0.000 K%: 38.000 FIP: 1.270 ERA: 3.29 WHIP: 0.66 W: 3.0 L: 1.0 SV: 1.0
   Name: Zach Thompson GS: 3.0 IP: 16.0 BF: 64.0 BB%: 9.375 K%: 37.500 FIP: 2.477 ERA: 2.25 WHIP: 0.94 W: 1.0 L: 1.0 SV: 0.0
