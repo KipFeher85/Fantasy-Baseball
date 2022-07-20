@@ -8,7 +8,7 @@ def readme():
 
 
 setup(name='yahoo_fb_stat_analysis',
-      version='5.0.1',
+      version='5.0.2',
       description='Python module to allow for advanced statistical analysis',
       long_description=readme(),
       url='https://github.com/KipFeher85/Fantasy-Baseball',
