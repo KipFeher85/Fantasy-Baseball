@@ -1,0 +1,32 @@
+{
+    "OBA Weight": 0.31,
+    "wOBA Scale": 1.255,
+    "BB Weight": 0.69,
+    "HBP Weight": 0.722,
+    "1B Weight": 0.885,
+    "2B Weight": 1.261,
+    "3B Weight": 1.6,
+    "HR Weight": 2.068,
+    "wRAA Weight": 0.115,
+    "AL Plate Appearances": {
+        "Season": 51649,
+        "Last Month": 14564,
+        "Last Week": 2663
+    },
+    "AL Weighted Runs Created": {
+        "Season": 5865,
+        "Last Month": 1751,
+        "Last Week": 300
+    },
+    "NL Plate Appearances": {
+        "Season": 52197,
+        "Last Month": 14388,
+        "Last Week": 2697
+    },
+    "NL Weighted Runs Created": {
+        "Season": 6127,
+        "Last Month": 1671,
+        "Last Week": 308
+    },
+    "FIP Constant": 3.113
+}
