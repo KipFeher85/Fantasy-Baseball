@@ -12,9 +12,9 @@ OAuth2.json setup
 
 League Constants
 
-- Make sure to call update_league_constats() ONCE AND ONLY ONCE PER DAY. This allows the user to run into less scenarios where they request too many times from a given API
-- Make sure to call update_ballpark_constants ONCE per year. This only needs done once per season since it uses ballpark factors from 2021
-- Make sure to ALWAYS call starter() whenever using the package, it is required for all functions
+- Make sure to call update_league_constants() ONCE AND ONLY ONCE PER DAY. This allows the user to run into less scenarios where they request too many times from a given API
+- Make sure to call update_ballpark_constants ONCE per year. This only needs done once per season since it uses ballpark factors from the previous season
+- Make sure to ALWAYS call starter() whenever using the package, it is required for ALL functions
 
 Python Module Usage
 -------------------
