@@ -14,7 +14,7 @@ League Constants
 
 - Make sure to call update_league_constats() ONCE AND ONLY ONCE PER DAY. This allows the user to run into less scenarios where they request too many times from a given API
 - Make sure to call update_ballpark_constants ONCE per year. This only needs done once per season since it uses ballpark factors from 2021
-- Make sure to allways call starter() whenever using the package, it is required for all functions
+- Make sure to ALWAYS call starter() whenever using the package, it is required for all functions
 
 Python Module Usage
 -------------------
@@ -32,12 +32,12 @@ Python Module Usage
   In [5]: lgObj.starter()
 
   # Get Shane McClanahan's stats over the past month
-  In [6]: shane = lgObj.getPlayer("Shane McClanahan", "lastmonth")
+  In [6]: shane = lgObj.get_player("Shane McClanahan", "lastmonth")
   Out[6]: {'Shane McClanahan': [11398.0, 5.0, 32.0, 122.0, 3.279, 31.967, 3.133, 1.41, 0.81, 39.0, 5.0, 3.0, 1.0, 0.0]}
 
-  # Display Trey Mancini's stats over the season
-  In [7]: lgObj.print_player("Trey Mancini", "season")
-  Out[7]: Name: Trey Mancini PA: 280.0 wRC: 41.822 wRC/PA: 0.149 wOBA: 0.349 BABIP: 0.339 WAR: 1.0 wRC+: 120.682
+  # Display Shane McClanahan's stats over the season
+  In [7]: lgObj.print_player("Shane McClanahan", "season")
+  Out[7]: Name: Shane McClanahan GS: 5.0 IP: 32.1 BF: 114.0 BB%: 3.509 K%: 36.842 FIP: 0.0 ERA: 1.39 WHIP: 0.65 W: 3.0 L: 0.0 SV: 0.0
 
   # Display your current roster's stats over the season
   In [8]: lgObj.current_roster_stats("season")
