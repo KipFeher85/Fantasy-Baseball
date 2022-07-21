@@ -1,3 +1,4 @@
+import yaml
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 import json
@@ -49,6 +50,8 @@ class League:
         self.nlWRC = 0
     
         self.FIP_Constant = 0
+
+        self.__configs = yaml.load(open("configs.yaml"), Loader=yaml.FullLoader)
 
     def update_ballpark_constants(self):
         """
@@ -266,7 +269,7 @@ class League:
                 playerDict = self.get_pitcher(time, playerId)
             return playerDict
         except Exception as e:
-            print(e)
+            print("Player Details Error: ", e)
             # If player is not available display message
             return str(player_name) + "'s stats not available"
 
@@ -355,105 +358,58 @@ class League:
         :return:
         """
         # Create a dictionary of all the games being played today
-        today = statsapi.schedule()
+        today = statsapi.schedule(date.today())
         if(len(today)) > 0:
-            # Create lists for both the away and home teams
-            hTList = []
-            aTList = []
-
-            # Create lists to hold pregame notes for both the home and away pitchers
-            hNList = []
-            aNList = []
-
-            # Create lists to hold both the home pitcher id and away pitcher
-            homePIDList = []
-            awayPIDList = []
-
-            # Create lists to hold both the home pitcher and away stat lines
-            homePitcherStatList = []
-            awayPitcherStatList = []
-
+            game_list = []
             # For every game on the schedule
             for game in today:
-                hTList.append(game["home_name"])
-                aTList.append(game["away_name"])
-
                 hN = game["home_pitcher_note"]
+                if hN == "": hN = "Not Available"
                 aN = game["away_pitcher_note"]
-                if hN == "":
-                    hN = "Not Available"
-                if aN == "":
-                    aN = "Not Available"
-
-                hNList.append(hN)
-                aNList.append(aN)
-
-                homePitcher = game["home_probable_pitcher"]
-                # Get the player_id of the home pitcher
-                try:
-                    hPID = self.lg.player_details(homePitcher)[0]['player_id']
-                except Exception as e:
-                    print(e)
-                    hPID = 0
-                # Add the homePitcher's name and id to the list
-                homePIDList.append([homePitcher, hPID])
-
-                awayPitcher = game["away_probable_pitcher"]
-                # Get the player_id of the away pitcher
-                try:
-                    aPID = self.lg.player_details(awayPitcher)[0]['player_id']
-                except Exception as e:
-                    print(e)
-                    aPID = 0
-                # Add the awayPitcher's name and id to the list
-                awayPIDList.append([awayPitcher, aPID])
-
-            # For every home pitcher
-            for i in homePIDList:
-                # Get the pitchers stats over the last month if available, if not then just add player's name and id
-                try:
-                    hPStats = self.get_pitcher("lastmonth", i[1])
-                    homePitcherStatList.append(hPStats)
-                except Exception as e:
-                    print(e)
-                    homePitcherStatList.append({i[0]: [i[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
-
-            # Create a list to hold all of the info desired for homePitchers
-            finalHPList = []
-            for i in range(0, len(homePitcherStatList)):
-                finalHPList.append(list(homePitcherStatList[i].items()))
-                finalHPList.append(list(homePitcherStatList[i].items()))
-                # FIP = print(finalHPList[i][0][1][6])
-
-            # For every away pitcher
-            for i in awayPIDList:
-                # Get the pitchers stats over the last month if available, if not then just add player's name and id
-                try:
-                    aPStats = self.get_pitcher("lastmonth", i[1])
-                    awayPitcherStatList.append(aPStats)
-                except Exception as e:
-                    print(e)
-                    awayPitcherStatList.append({i[0]: [i[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
-
-            # Create a list to hold all of the info desired for awayPitchers
-            finalAPList = []
-            for i in range(0, len(awayPitcherStatList)):
-                finalAPList.append(list(awayPitcherStatList[i].items()))
-                # FIP = print(finalHPList[i][0][1][6])
-
-            for i in range(0, len(today)):
-                print("\nGame " + str(i + 1) + ": " + str(aTList[i]) + " at " + str(hTList[i]))
+                if aN == "": aN = "Not Available"
+                if game["home_probable_pitcher"] == "Shohei Ohtani":
+                    h_id = "1000002"
+                else:
+                    h_id = self.lg.player_details(game["home_probable_pitcher"])[0]['player_id']
+                if game["home_probable_pitcher"] == "Shohei Ohtani":
+                    a_id = "1000002"
+                else:
+                    a_id = self.lg.player_details(game["away_probable_pitcher"])[0]['player_id']
+                game_list.append({
+                    "Home Name": game["home_name"],
+                    "Away Name": game["away_name"],
+                    "Home Pitcher": {
+                        "Name": game["home_probable_pitcher"],
+                        "ID": h_id,
+                        "Stats": self.get_pitcher("lastmonth", h_id),
+                        "Note": hN
+                    },
+                    "Away Pitcher": {
+                        "Name": game["away_probable_pitcher"],
+                        "ID": a_id,
+                        "Stats": self.get_pitcher("lastmonth", a_id),
+                        "Note": aN
+                    }
+                })
+            for i in range(0, len(game_list)):
+                print("\nGame " + str(i + 1) + ": " + str(game_list[i]["Away Name"]) + " at " + str(game_list[i]["Home Name"]))
                 print("Pitcher Stats over the past month")
-                print("HP: " + str(homePIDList[i][0]) + " IP: " + str(finalHPList[i][0][1][2]) + " BF: " + str(finalHPList[i][0][1][3]) + " BB%: " + str(
-                    finalHPList[i][0][1][4]) + " K%: " + str(finalHPList[i][0][1][5]) + " FIP: " + str(
-                    finalHPList[i][0][1][6]) + " ERA: " + str(finalHPList[i][0][1][7]) + " WHIP: " + str(
-                    finalHPList[i][0][1][8]) + " K: " + str(finalHPList[i][0][1][10]) + " HR: " + str(finalHPList[i][0][1][11]))
-                print(str(homePIDList[i][0]) + " Note: " + str(hNList[i]))
-                print("AP: " + str(awayPIDList[i][0]) + " IP: " + str(finalAPList[i][0][1][2]) + " BF: " + str(finalAPList[i][0][1][3]) + " BB%: " + str(
-                    finalAPList[i][0][1][4]) + " K%: " + str(finalAPList[i][0][1][5]) + " FIP: " + str(
-                    finalAPList[i][0][1][6]) + " ERA: " + str(finalAPList[i][0][1][7]) + " WHIP: " + str(
-                    finalAPList[i][0][1][8]) + " K: " + str(finalAPList[i][0][1][10]) + " HR: " + str(finalAPList[i][0][1][11]))
-                print(str(awayPIDList[i][0]) + " Note: " + str(aNList[i]))
+                try:
+                    hPitcherName = game_list[i]['Home Pitcher']['Name']
+                    hPitcher = game_list[i]["Home Pitcher"]["Stats"][hPitcherName]
+                    hPitcherNote = game_list[i]["Home Pitcher"]["Note"]
+                    print(f"HP: {hPitcherName} IP: {hPitcher['IP']} BF: {hPitcher['BF']} BB%: {hPitcher['BB']} K%: {hPitcher['SO%']} FIP: {hPitcher['FIP']} ERA: {hPitcher['ERA']} WHIP: {hPitcher['WHIP']} K: {hPitcher['K']} HR: {hPitcher['HR']}")
+                    print(str(hPitcherName) + " Note: " + hPitcherNote)
+                except Exception as e:
+                    print("HP: There isnt a specified pitcher or the pitcher's information is unavailable")
+                try:
+                    aPitcherName = game_list[i]['Away Pitcher']['Name']
+                    aPitcher = game_list[i]["Away Pitcher"]["Stats"][aPitcherName]
+                    aPitcherNote = game_list[i]["Away Pitcher"]["Note"]
+                    print(f"AP: {aPitcherName} IP: {aPitcher['IP']} BF: {aPitcher['BF']} BB%: {aPitcher['BB']} K%: {aPitcher['SO%']} FIP: {aPitcher['FIP']} ERA: {aPitcher['ERA']} WHIP: {aPitcher['WHIP']} K: {aPitcher['K']} HR: {aPitcher['HR']}")
+                    print(str(aPitcherName) + " Note: " + aPitcherNote)
+                except Exception as e:
+                    print("AP: There isnt a specified pitcher or the pitcher's information is unavailable")
         else:
             print("There are no games today :/")
 
@@ -476,25 +432,12 @@ class League:
         :param reverse: bool - True: Desc, False: Asc
         :return:
         """
-
-        valueLength = len(list(ed_dict.values())[0])
-        # If ed_dict contains WAR or list length is 11, print with WAR
-        if valueLength == 11:
-            # Created a sorted list of batters, based on their WRC+ in descending order
-            sortedBList = sorted(ed_dict.items(), key=lambda item: item[1][9], reverse=reverse)
-            for i in sortedBList:
-                playerStats = i[1]
-                # If WAR is available, print WAR. If it doesnt then dont include WAR since it cant be calculated
-                print("Name: " + str(i[0]) + " PA: " + str(playerStats[0]) + " wRC: " + str(
-                    playerStats[7]) + " wRC/PA: " + str(playerStats[10]) + " wOBA: " + str(playerStats[6]) + " BABIP: " + str(
-                    playerStats[3]) + " WAR: " + str(playerStats[8]) + " wRC+: " + str(playerStats[9]))
-        else:
-            sortedBList = sorted(ed_dict.items(), key=lambda item: item[1][8], reverse=reverse)
-            for i in sortedBList:
-                playerStats = i[1]
-                print("Name: " + str(i[0]) + " PA: " + str(playerStats[0]) + " wRC: " + str(
-                    playerStats[7]) + " wRC/PA: " + str(playerStats[9]) + " wOBA: " + str(playerStats[6]) + " BABIP: " + str(
-                    playerStats[3]) + " wRC+: " + str(playerStats[8]))
+        sortedBList = sorted(ed_dict.items(), key=lambda item: item[1]["wRCP"], reverse=reverse)
+        for i in sortedBList:
+            if "WAR" in i[1]:
+                print(f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']} WAR: {i[1]['WAR']}")
+            else:
+                print(f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']}")
 
     def print_pitchers(self, ed_dict, reverse):
         """
@@ -503,20 +446,14 @@ class League:
         :param reverse: bool - True: Desc, False: Asc
         :return:
         """
-        sortedPList = sorted(ed_dict.items(), key=lambda item: item[1][6], reverse=reverse)
+        sortedPList = sorted(ed_dict.items(), key=lambda item: item[1]["FIP"], reverse=reverse)
         # Created a sorted list of pitchers, based on their FIP in descending order
         for i in sortedPList:
-            playerStats = i[1]
-            if len(playerStats) == 15:
+            if "WAR" in i[1]:
                 # If type equals 'season', print WAR. If it doesnt then dont include WAR since it cant be calculated
-                print("Name: " + str(i[0]) + " GS: " + str(playerStats[1]) + " IP: " + str(
-                    playerStats[2]) + " BF: " + str(playerStats[3]) + " BB%: " + str(playerStats[4]) + " K%: " + str(
-                    playerStats[5]) + " FIP: " + str(playerStats[6]) + " ERA: " + str(playerStats[7]) + " WHIP: " + str(
-                    playerStats[8]) + " WAR: " + str(playerStats[9]) + " W: " + str(playerStats[12]) + " L: " + str(playerStats[13]) + " SV: " + str(playerStats[14]))
+                print(f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} WAR: {i[1]['WAR']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
             else:
-                print("Name: " + str(i[0]) + " GS: " + str(playerStats[1]) + " IP: " + str(
-                    playerStats[2]) + " BF: " + str(playerStats[3]) + " BB%: " + str(playerStats[4]) + " K%: " + str(
-                    playerStats[5]) + " FIP: " + str(playerStats[6]) + " ERA: " + str(playerStats[7]) + " WHIP: " + str(playerStats[8]) + " W: " + str(playerStats[11]) + " L: " + str(playerStats[12]) + " SV: " + str(playerStats[13]))
+                print(f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
 
     def get_batters(self, time, status, qualified):
         """
@@ -566,8 +503,6 @@ class League:
             allBID.append(faBID)
         # Add every batter on your team to allBID
         else:
-            print("Current week: ", self.lg.current_week())
-            print("Current week roster: ", self.tm.roster())
             for i in self.tm.roster(self.lg.current_week()):
                 if i["position_type"] == "B":
                     teamBID.append(i["player_id"])
@@ -575,15 +510,15 @@ class League:
 
         df = json.load(open("leagueConstants.json"))
         # Get the season weights
-        self.obaW = float(df["OBA Weight"])
-        self.wOBAScale = float(df["wOBA Scale"])
-        self.wBB = float(df["BB Weight"])
-        self.wHBP = float(df["HBP Weight"])
-        self.w1B = float(df["1B Weight"])
-        self.w2B = float(df["2B Weight"])
-        self.w3B = float(df["3B Weight"])
-        self.wHR = float(df["HR Weight"])
-        self.rPAW = float(df["wRAA Weight"])
+        self.obaW = df["OBA Weight"]
+        self.wOBAScale = df["wOBA Scale"]
+        self.wBB = df["BB Weight"]
+        self.wHBP = df["HBP Weight"]
+        self.w1B = df["1B Weight"]
+        self.w2B = df["2B Weight"]
+        self.w3B = df["3B Weight"]
+        self.wHR = df["HR Weight"]
+        self.rPAW = df["wRAA Weight"]
 
         # Set the AL and NL PA/WRC stats based on the time period
         alPA = df["AL Plate Appearances"]
@@ -608,11 +543,11 @@ class League:
         # Determine whether or not the qualifier is used
         if qualified:
             if time == "season":
-                paQualifier = 150
+                paQualifier = self.__configs["plate_appearances_season"]
             elif time == "lastmonth":
-                paQualifier = 30
+                paQualifier = self.__configs["plate_appearances_month"]
             else:
-                paQualifier = 5
+                paQualifier = self.__configs["plate_appearances_week"]
         else:
             paQualifier = 0
 
@@ -624,51 +559,35 @@ class League:
             pD = self.lg.player_details(allBID[i])
             # For every batter in our current list
             for j in range(0, len(batterStats)):
-                playerName = batterStats[j]['name']
+                # Set every stat that is not available to 0.0
+                batter = batterStats[j]
+                batter_keys = list(batter.keys())
+                for k in batter_keys:
+                    if batter[k] == "-": batter[k] = 0
+                playerName = batter['name']
                 # Get the players team from our pD object
                 playerTeam = pD[j]['editorial_team_full_name']
-
-                playerAB = batterStats[j]['AB']  # Number of player at-bats
-                playerPA = batterStats[j]['PA']  # Number of plate appearances
-                if playerPA == "-": playerPA = 0
-
-                if float(int(playerPA)) > paQualifier:
-                    playerAVG = batterStats[j]['AVG']  # Player's batting average
-                    playerOPS = batterStats[j]['OPS']  # Player's OBP + Slugging
-                    playerHR = batterStats[j]['HR']  # Number of home runs hit
-                    playerBB = batterStats[j]['BB']  # Number of walks
-                    playerIBB = batterStats[j]['IBB']  # Number of intentional walks
-                    playerSF = batterStats[j]['SF']  # Number of sacrifice flies
-                    playerHBP = batterStats[j]['HBP']  # Number of times hit by a pitch
-                    player1B = batterStats[j]['1B']  # Number of singles
-                    player2B = batterStats[j]['2B']  # Number of doubles
-                    player3B = batterStats[j]['3B']  # Number of triples
-                    playerSO = batterStats[j]['SO']  # Number of strikeouts
-                    playerH = batterStats[j]['H']  # Number of hits
-
-                    # Set every stat that is not available to 0.0
-                    if playerAB == "-": playerAB = 0
-                    if playerAVG == "-": playerAVG = 0
-                    if playerOPS == "-": playerOPS = 0
-                    if playerHR == "-": playerHR = 0
-                    if playerBB == "-": playerBB = 0
-                    if playerIBB == "-": playerIBB = 0
-                    if playerSF == "-": playerSF = 0
-                    if playerHBP == "-": playerHBP = 0
-                    if player1B == "-": player1B = 0
-                    if player2B == "-": player2B = 0
-                    if player3B == "-": player3B = 0
-                    if playerSO == "-": playerSO = 0
-                    if playerH == "-": playerH = 0
-
+                playerAB = batter['AB']  # Number of player at-bats
+                playerPA = batter['PA']  # Number of plate appearances
+                if float(int(playerPA)) >= paQualifier:
+                    playerAVG = batter['AVG']  # Player's batting average
+                    playerOPS = batter['OPS']  # Player's OBP + Slugging
+                    playerHR = batter['HR']  # Number of home runs hit
+                    playerBB = batter['BB']  # Number of walks
+                    playerIBB = batter['IBB']  # Number of intentional walks
+                    playerSF = batter['SF']  # Number of sacrifice flies
+                    playerHBP = batter['HBP']  # Number of times hit by a pitch
+                    player1B = batter['1B']  # Number of singles
+                    player2B = batter['2B']  # Number of doubles
+                    player3B = batter['3B']  # Number of triples
+                    playerSO = batter['SO']  # Number of strikeouts
+                    playerH = batter['H']  # Number of hits
                     # Set playerWar if type is season, otherwise set to 0 since it is not available
                     try:
-                        playerWAR = batterStats[j]['WAR']
-                        if playerWAR == "-": playerWAR = 0
+                        playerWAR = batter['WAR']
                     except Exception as e:
-                        print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
+                        # print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
                         playerWAR = 0
-
                     # Gets the player's weighted on base average if available using league constants from FanGraphs
                     try:
                         wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (
@@ -676,30 +595,29 @@ class League:
                                            playerAB + playerBB - playerIBB + playerSF + playerHBP)
                         wOBA = float("{:.3f}".format(wOBA))
                     except Exception as e:
-                        print(e)
+                        # print("wOBA Error: ", e)
                         wOBA = 0
                     # Get the player's batting average on balls in play
                     try:
                         BABIP = (playerH - playerHR) / (playerAB - playerHR - playerSO + playerSF)
                         BABIP = float("{:.3f}".format(BABIP))
                     except Exception as e:
-                        print(e)
+                        # print("BABIP Error: ", e)
                         BABIP = 0
                     # Gets the player's number of weighted runs scored
                     try:
                         wRC = (((wOBA - self.obaW) / self.wOBAScale) + self.rPAW) * playerPA
                         wRC = float("{:.3f}".format(wRC))
                     except Exception as e:
-                        print(e)
+                        # print("wRC Error: ", e)
                         wRC = 0
                     # Gets the player's number of weighted runs created per plate appearance
                     try:
                         wRCPA = float(wRC) / playerPA
                         wRCPA = float("{:.3f}".format(wRCPA))
                     except Exception as e:
-                        print(e)
+                        # print("wRC/PA Error: ", e)
                         wRCPA = 0
-
                     # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
                     try:
                         # wRAA = ((wOBA – league wOBA) / wOBA scale) × PA
@@ -714,47 +632,45 @@ class League:
                                         self.alWRC / self.alPA)) * 100
                         wRCP = float("{:.3f}".format(wRCP))
                     except Exception as e:
-                        print(e)
+                        # print("wRC+ Error: ", e)
                         wRCP = 0
                     # Get the players walk and strikeout percentages
                     try:
                         bb = (playerBB / playerAB) * 100
                         bb = float("{:.3f}".format(bb))
                     except Exception as e:
-                        print(e)
+                        # print("BB Error: ", e)
                         bb = 0
                     try:
                         k = (playerSO / playerAB) * 100
                         k = float("{:.3f}".format(k))
                     except Exception as e:
-                        print(e)
+                        # print("K Error: ", e)
                         k = 0
-
+                    player_dict = {
+                        playerName: {
+                            "PA": playerPA,
+                            "BB": bb,
+                            "K": k,
+                            "BABIP": BABIP,
+                            "AVG": playerAVG,
+                            "OPS": playerOPS,
+                            "wOBA": wOBA,
+                            "wRC": wRC,
+                            "wRCPA": wRCPA,
+                            "wRCP": wRCP
+                        }
+                    }
                     # If time is season, add WAR to dict, otherwise dont
                     if time == "season":
-                        playerDict = {
-                            playerName: [
-                                playerPA, bb, k, BABIP,
-                                playerAVG, playerOPS, wOBA,
-                                wRC, playerWAR, wRCP, wRCPA
-                            ]
-                        }
-                    else:
-                        playerDict = {
-                            playerName: [
-                                playerPA, float(bb), float(k), float(BABIP), float(playerAVG),
-                                float(playerOPS), wOBA, float(wRC), float(wRCP), float(wRCPA)
-                            ]
-                        }
-
+                        player_dict[playerName]["WAR"] = playerWAR
                     # Add the player to their respective dictionary
                     if status == 1:
-                        takenBatterDict.update(playerDict)
+                        takenBatterDict.update(player_dict)
                     elif status == 2:
-                        faBatterDict.update(playerDict)
+                        faBatterDict.update(player_dict)
                     elif status == 3:
-                        teamBatterDict.update(playerDict)
-
+                        teamBatterDict.update(player_dict)
         # Return dict of all batters in the league
         if status == 0:
             allBatterDict.update(takenBatterDict)
@@ -778,22 +694,17 @@ class League:
         :param player_id: str - Id of the player to be analyzed
         :return: dict of desired batters based on the given status
         """
-        # Get a list of batter stats given a player id and the desired time range
-        batterStats = self.lg.player_stats(player_id, req_type=time)
-        # Get a list of all details for a batter, primarily used for their team to get their ballpark factor
-        pD = self.lg.player_details(int(player_id))
-
         df = json.load(open("leagueConstants.json"))
         # Get the season weights
-        self.obaW = float(df["OBA Weight"])
-        self.wOBAScale = float(df["wOBA Scale"])
-        self.wBB = float(df["BB Weight"])
-        self.wHBP = float(df["HBP Weight"])
-        self.w1B = float(df["1B Weight"])
-        self.w2B = float(df["2B Weight"])
-        self.w3B = float(df["3B Weight"])
-        self.wHR = float(df["HR Weight"])
-        self.rPAW = float(df["wRAA Weight"])
+        self.obaW = df["OBA Weight"]
+        self.wOBAScale = df["wOBA Scale"]
+        self.wBB = df["BB Weight"]
+        self.wHBP = df["HBP Weight"]
+        self.w1B = df["1B Weight"]
+        self.w2B = df["2B Weight"]
+        self.w3B = df["3B Weight"]
+        self.wHR = df["HR Weight"]
+        self.rPAW = df["wRAA Weight"]
 
         # Set the AL and NL PA/WRC stats based on the time period
         alPA = df["AL Plate Appearances"]
@@ -815,75 +726,65 @@ class League:
             self.alWRC = alWRC["Last Week"]
             self.nlPA = nlPA["Last Week"]
             self.nlWRC = nlWRC["Last Week"]
-        playerName = batterStats[0]['name']
 
+        # Get a list of batter stats given a player id and the desired time range
+        batterStats = self.lg.player_stats(player_id, req_type=time)[0]
+        # Set every stat that is not available to 0.0
+        batter_keys = list(batterStats.keys())
+        for k in batter_keys:
+            if batterStats[k] == "-": batterStats[k] = 0
+        # Get a list of all details for a batter, primarily used for their team to get their ballpark factor
+        pD = self.lg.player_details(int(player_id))
         # Get the players team from our pD object
         playerTeam = pD[0]['editorial_team_full_name']
-        playerAB = batterStats[0]['AB']  # Number of player at-bats
-        playerAVG = batterStats[0]['AVG']  # Player's batting average
-        playerOPS = batterStats[0]['OPS']  # Player's OBP + Slugging
-        playerHR = batterStats[0]['HR']  # Number of home runs hit
-        playerBB = batterStats[0]['BB']  # Number of walks
-        playerIBB = batterStats[0]['IBB']  # Number of intentional walks
-        playerSF = batterStats[0]['SF']  # Number of sacrifice flies
-        playerHBP = batterStats[0]['HBP']  # Number of times hit by a pitch
-        player1B = batterStats[0]['1B']  # Number of singles
-        player2B = batterStats[0]['2B']  # Number of doubles
-        player3B = batterStats[0]['3B']  # Number of triples
-        playerPA = batterStats[0]['PA']  # Number of plate appearances
-        playerSO = batterStats[0]['SO']  # Number of strikeouts
-        playerH = batterStats[0]['H']  # Number of hits
-
-        # Set every stat that is not available to 0.0
-        if playerAB == "-": playerAB = 0
-        if playerAVG == "-": playerAVG = 0
-        if playerOPS == "-": playerOPS = 0
-        if playerHR == "-": playerHR = 0
-        if playerBB == "-": playerBB = 0
-        if playerIBB == "-": playerIBB = 0
-        if playerSF == "-": playerSF = 0
-        if playerHBP == "-": playerHBP = 0
-        if player1B == "-": player1B = 0
-        if player2B == "-": player2B = 0
-        if player3B == "-": player3B = 0
-        if playerPA == "-": playerPA = 0
-        if playerSO == "-": playerSO = 0
-        if playerH == "-": playerH = 0
-
+        playerName = batterStats['name']
+        playerAB = batterStats['AB']  # Number of player at-bats
+        playerAVG = batterStats['AVG']  # Player's batting average
+        playerOPS = batterStats['OPS']  # Player's OBP + Slugging
+        playerHR = batterStats['HR']  # Number of home runs hit
+        playerBB = batterStats['BB']  # Number of walks
+        playerIBB = batterStats['IBB']  # Number of intentional walks
+        playerSF = batterStats['SF']  # Number of sacrifice flies
+        playerHBP = batterStats['HBP']  # Number of times hit by a pitch
+        player1B = batterStats['1B']  # Number of singles
+        player2B = batterStats['2B']  # Number of doubles
+        player3B = batterStats['3B']  # Number of triples
+        playerPA = batterStats['PA']  # Number of plate appearances
+        playerSO = batterStats['SO']  # Number of strikeouts
+        playerH = batterStats['H']  # Number of hits
         # Set playerWar if type is season, otherwise set to 0 since it is not available
         try:
-            playerWAR = batterStats[0]['WAR']
-            if playerWAR == "-": playerWAR = 0
+            playerWAR = batterStats['WAR']
         except Exception as e:
-            print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
+            # print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
             playerWAR = 0
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
             wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (playerAB + playerBB - playerIBB + playerSF + playerHBP)
             wOBA = float("{:.3f}".format(wOBA))
         except Exception as e:
-            print(e)
+            # print("wOBA Error: ", e)
             wOBA = 0
         # Get the player's batting average on balls in play
         try:
             BABIP = (playerH - playerHR) / (playerAB - playerHR - playerSO + playerSF)
             BABIP = float("{:.3f}".format(BABIP))
         except Exception as e:
-            print(e)
+            # print("BABIP Error: ", e)
             BABIP = 0
         # Gets the player's number of weighted runs scored
         try:
             wRC = (((wOBA - self.obaW) / self.wOBAScale) + self.rPAW) * playerPA
             wRC = float("{:.3f}".format(wRC))
         except Exception as e:
-            print(e)
+            # print("wRC Error: ", e)
             wRC = 0
         # Gets the player's number of weighted runs created per plate appearance
         try:
             wRCPA = float(wRC) / playerPA
             wRCPA = float("{:.3f}".format(wRCPA))
         except Exception as e:
-            print(e)
+            # print("wRC/PA Error: ", e)
             wRCPA = 0
         # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
         try:
@@ -897,31 +798,40 @@ class League:
                 wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (self.alWRC / self.alPA)) * 100
             wRCP = float("{:.3f}".format(wRCP))
         except Exception as e:
-            print(e)
+            # print("wRC+ Error: ", e)
             wRCP = 0
         # Get the players walk and strikeout percentages
         try:
             bb = (playerBB / playerAB) * 100
             bb = float("{:.3f}".format(bb))
         except Exception as e:
-            print(e)
+            # print("BB Error: ", e)
             bb = 0
         try:
             k = (playerSO / playerAB) * 100
             k = float("{:.3f}".format(k))
         except Exception as e:
-            print(e)
+            # print("K Error: ", e)
             k = 0
+        player_dict = {
+            playerName: {
+                "PA": playerPA,
+                "BB": bb,
+                "K": k,
+                "BABIP": BABIP,
+                "AVG": playerAVG,
+                "OPS": playerOPS,
+                "wOBA": wOBA,
+                "wRC": wRC,
+                "wRCPA": wRCPA,
+                "wRCP": wRCP
+            }
+        }
         # If time is season, add WAR to dict, otherwise dont
         if time == "season":
-            return {
-                playerName: [playerPA, float(bb), float(k), float(BABIP), float(playerAVG), float(playerOPS), wOBA,
-                             float(wRC), float(playerWAR), float(wRCP), float(wRCPA)]}
-        else:
-            return {
-                playerName: [playerPA, float(bb), float(k), float(BABIP), float(playerAVG), float(playerOPS),
-                             wOBA,
-                             float(wRC), float(wRCP), float(wRCPA)]}
+            player_dict[playerName]["WAR"] = playerWAR
+
+        return player_dict
 
     def get_pitcher(self, time, player_id):
         """
@@ -931,100 +841,99 @@ class League:
         :return: desired pitcher's stats in the form of a dict
         """
         # Get a list of pitcher stats given player's id and the desired time range
-        pitcherStats = self.lg.player_stats(player_id, req_type=time)
-
-        playerName = pitcherStats[0]['name']
-        playerGames = pitcherStats[0]['G']
-        playerIP = pitcherStats[0]['IP']
-        playerBF = pitcherStats[0]['BF']  # Number of batters faced
-        playerBB = pitcherStats[0]['BB']  # Number of batters walked
-        playerKP = pitcherStats[0]['K']  # Number of strikeouts
-        playerHR = pitcherStats[0]['HR']  # Number of home runs allowed
-        playerHBP = pitcherStats[0]['HBP']  # Number of batters hit with a pitch
-        playerERA = pitcherStats[0]['ERA']  # Player's ERA
-        playerWHIP = pitcherStats[0]['WHIP']  # Player's WHIP
-        playerWin = pitcherStats[0]['W']      # Number of wins
-        playerLoss = pitcherStats[0]['L']
-        playerSV = pitcherStats[0]['SV']
-
-        try:
-            playerWAR = pitcherStats[0]['WAR']
-        except Exception as e:
-            print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
-            playerWAR = 0
-
+        pitcherStats = self.lg.player_stats(player_id, req_type=time)[0]
         # Set every stat that is not available to 0.0
-        if playerGames == "-":
-            playerGames = 0
-        if playerBF == "-":
-            playerBF = 0
-        if playerBB == "-":
-            playerBB = 0
-        if playerKP == "-":
-            playerKP = 0
-        if playerHR == "-":
-            playerHR = 0
-        if playerHBP == "-":
-            playerHBP = 0
-        if playerIP == "-":
-            playerIP = 0
-        if playerWAR == "-":
-            playerWAR = 0
-        if playerERA == "-":
-            playerERA = 0
-        if playerWHIP == "-":
-            playerWHIP = 0
-        if playerWin == "-":
-            playerWin = 0
-        if playerLoss == "-":
-            playerLoss = 0
-        if playerSV == "-":
-            playerSV = 0
-
-        # Set strikeouts before it is modified for K%
-        strikeouts = playerKP
-
+        for i in pitcherStats:
+            if pitcherStats[i] == "-":
+                pitcherStats[i] = 0.0
+        playerName = pitcherStats['name']
         try:
-            bb = float(playerBB) / float(playerBF)
-        except Exception as e:
-            print(e)
-            bb = 0
-
-        try:
-            kP = float(playerKP) / float(playerBF)
-        except Exception as e:
-            print(e)
-            kP = 0
-
-        # Multiply BB and KP by 100 to get a percentage and format them
-        bb *= 100
-        kP *= 100
-        bb = "{:.3f}".format(bb)
-        kP = "{:.3f}".format(kP)
-
-        # Calculate the FIP score if possible
-        try:
-            FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(
-                playerIP)
-            # Constant is the league average FPI score for year
-            FIP = float(FIP) + float(self.FIP_Constant)
-        except Exception as e:
-            print(e)
-            FIP = 0
-
-        FIP = "{:.3f}".format(FIP)
-
-        # If time is season, add WAR to dict, otherwise dont
-        if time == "season":
-            return {
-                playerName: [float(player_id), float(playerGames), float(playerIP), float(playerBF), float(bb), float(kP),
-                             float(FIP), float(playerERA), float(playerWHIP), float(playerWAR), float(strikeouts),
-                             float(playerHR), float(playerWin), float(playerLoss), float(playerSV)]}
-        else:
-            return {
-                playerName: [float(player_id), float(playerGames), float(playerIP), float(playerBF), float(bb), float(kP),
-                             float(FIP), float(playerERA), float(playerWHIP), float(strikeouts),
-                             float(playerHR), float(playerWin), float(playerLoss), float(playerSV)]}
+            playerGames = pitcherStats['G']
+            playerIP = pitcherStats['IP']
+            playerBF = pitcherStats['BF']  # Number of batters faced
+            playerBB = pitcherStats['BB']  # Number of batters walked
+            playerKP = pitcherStats['K']  # Number of strikeouts
+            playerHR = pitcherStats['HR']  # Number of home runs allowed
+            playerHBP = pitcherStats['HBP']  # Number of batters hit with a pitch
+            playerERA = pitcherStats['ERA']  # Player's ERA
+            playerWHIP = pitcherStats['WHIP']  # Player's WHIP
+            playerWin = pitcherStats['W']      # Number of wins
+            playerLoss = pitcherStats['L']
+            playerSV = pitcherStats['SV']
+            try:
+                playerWAR = pitcherStats['WAR']
+            except Exception as e:
+                # print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
+                playerWAR = 0
+            # Set strikeouts before it is modified for K%
+            strikeouts = playerKP
+            try:
+                bb = playerBB / playerBF
+            except Exception as e:
+                # print("BB Error: ", e)
+                bb = 0
+            try:
+                kP = playerKP / playerBF
+            except Exception as e:
+                # print("K%: ", e)
+                kP = 0
+            # Multiply BB and KP by 100 to get a percentage and format them
+            bb = "{:.3f}".format(bb * 100)
+            kP = "{:.3f}".format(kP * 100)
+            # Calculate the FIP score if possible
+            try:
+                FIP = (13 * playerHR + 3 * (playerBB + playerHBP) - 2 * strikeouts) / playerIP
+                # Constant is the league average FPI score for year
+                FIP = FIP + self.FIP_Constant
+            except Exception as e:
+                # print("FIP Error: ", e)
+                FIP = 0
+            FIP = "{:.3f}".format(FIP)
+            # If time is season, add WAR to dict, otherwise dont
+            playerDict = {
+                playerName:
+                    {
+                        "ID": player_id,
+                        "GP": playerGames,
+                        "IP": playerIP,
+                        "BF": playerBF,
+                        "BB": bb,
+                        "SO%": kP,
+                        "FIP": FIP,
+                        "ERA": playerERA,
+                        "WHIP": playerWHIP,
+                        "K": strikeouts,
+                        "HR": playerHR,
+                        "W": playerWin,
+                        "L": playerLoss,
+                        "SV": playerSV
+                    }
+            }
+            # If time is season, add WAR to dict, otherwise dont
+            if time == "season":
+                playerDict[playerName]["WAR"] = playerWAR
+            return playerDict
+        except:
+            playerDict = {
+                playerName:
+                    {
+                        "ID": player_id,
+                        "GP": 0.0,
+                        "IP": 0.0,
+                        "BF": 0.0,
+                        "BB": 0.0,
+                        "SO%": 0.0,
+                        "FIP": 0.0,
+                        "ERA": 0.0,
+                        "WHIP": 0.0,
+                        "K": 0.0,
+                        "HR": 0.0,
+                        "W": 0.0,
+                        "L": 0.0,
+                        "SV": 0.0
+                    }
+            }
+            return playerDict
 
     def get_pitchers(self, time, status, qualified):
         """
@@ -1082,117 +991,87 @@ class League:
         for i in range(0, len(allPID)):
             # Get a list of pitcher stats given a list of player ids and the desired time range
             pitcherStats = self.lg.player_stats(allPID[i], req_type=time)
-
             for j in range(0, len(pitcherStats)):
-                playerName = pitcherStats[j]['name']
-                playerID = pitcherStats[j]['player_id']
-                playerGames = pitcherStats[j]['G']
-                playerIP = pitcherStats[j]['IP']
-                playerBF = pitcherStats[j]['BF']  # Number of batters faced
-                if playerBF == "-":
-                    playerBF = 0
+                pitcher = pitcherStats[j]
+                # Set every stat that is not available to 0.0
+                pitcher_keys = list(pitcher.keys())
+                for k in pitcher_keys:
+                    if pitcher[k] == "-": pitcher[k] = 0
+                playerName = pitcher['name']
+                playerID = pitcher['player_id']
+                playerGames = pitcher['G']
+                playerIP = pitcher['IP']
+                playerBF = pitcher['BF']  # Number of batters faced
                 if qualified:
                     if time == "season":
-                        bfQualifier = 50
+                        bfQualifier = self.__configs["batters_faced_season"]
                     elif time == "lastmonth":
-                        bfQualifier = 25
+                        bfQualifier = self.__configs["batters_faced_month"]
                     else:
-                        bfQualifier = 10
+                        bfQualifier = self.__configs["batters_faced_week"]
                 else:
                     bfQualifier = 0
-                if float(int(playerBF)) > bfQualifier:
-                    playerBB = pitcherStats[j]['BB']  # Number of batters walked
-                    playerKP = pitcherStats[j]['K']  # Number of strikeouts
-
-                    playerHR = pitcherStats[j]['HR']  # Number of home runs allowed
-                    playerHBP = pitcherStats[j]['HBP']  # Number of batters hit with a pitch
-                    playerERA = pitcherStats[j]['ERA']  # Player's ERA
-                    playerWHIP = pitcherStats[j]['WHIP']  # Player's WHIP
-
-                    playerWin = pitcherStats[j]['W']  # Number of wins
-                    playerLoss = pitcherStats[j]['L']
-                    playerSV = pitcherStats[j]['SV']
-
+                if float(int(playerBF)) >= bfQualifier:
+                    playerBB = pitcher['BB']  # Number of batters walked
+                    playerKP = pitcher['K']  # Number of strikeouts
+                    playerHR = pitcher['HR']  # Number of home runs allowed
+                    playerHBP = pitcher['HBP']  # Number of batters hit with a pitch
+                    playerERA = pitcher['ERA']  # Player's ERA
+                    playerWHIP = pitcher['WHIP']  # Player's WHIP
+                    playerWin = pitcher['W']  # Number of wins
+                    playerLoss = pitcher['L']
+                    playerSV = pitcher['SV']
                     try:
-                        playerWAR = pitcherStats[j]['WAR']
+                        playerWAR = pitcher['WAR']
                     except Exception as e:
-                        print(e)
+                        # print("Failed to get the player's WAR rating. Only available for a players season stats. Not last month or week")
                         playerWAR = 0
-
-                    # Set every stat that is not available to 0.0
-                    if playerBB == "-":
-                        playerBB = 0
-                    if playerKP == "-":
-                        playerKP = 0
-
-                    if playerHR == "-":
-                        playerHR = 0
-                    if playerHBP == "-":
-                        playerHBP = 0
-                    if playerIP == "-":
-                        playerIP = 0
-                    if playerWAR == "-":
-                        playerWAR = 0
-                    if playerERA == "-":
-                        playerERA = 0
-                    if playerWHIP == "-":
-                        playerWHIP = 0
-                    if playerGames == "-":
-                        playerGames = 0
-                    if playerWin == "-":
-                        playerWin = 0
-                    if playerLoss == "-":
-                        playerLoss = 0
-                    if playerSV == "-":
-                        playerSV = 0
-
                     # Set strikeouts before it is modified for K%
                     strikeouts = playerKP
-
                     try:
-                        bb = float(playerBB) / float(playerBF)
+                        bb = playerBB / playerBF
                     except Exception as e:
-                        print(e)
+                        # print("BB Error: ", e)
                         bb = 0
-
                     try:
-                        kP = float(playerKP) / float(playerBF)
+                        kP = playerKP / playerBF
                     except Exception as e:
-                        print(e)
+                        # print("K%: ", e)
                         kP = 0
-
                     # Multiply BB and KP by 100 to get a percentage and format them
-                    bb *= 100
-                    kP *= 100
-                    bb = "{:.3f}".format(bb)
-                    kP = "{:.3f}".format(kP)
-
+                    bb = "{:.3f}".format(bb * 100)
+                    kP = "{:.3f}".format(kP * 100)
                     # Calculate the FIP score if possible
                     try:
-                        FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(playerIP)
+                        FIP = (13 * playerHR + 3 * (playerBB + playerHBP) - 2 * strikeouts) / playerIP
                         # Constant is the league average FPI score for year
-                        FIP = float(FIP) + float(self.FIP_Constant)
+                        FIP = FIP + self.FIP_Constant
                     except Exception as e:
-                        print(e)
+                        # print("FIP Error: ", e)
                         FIP = 0
                     FIP = "{:.3f}".format(FIP)
-
+                    playerDict = {
+                        playerName:
+                        {
+                            "ID": playerID,
+                            "GP": playerGames,
+                            "IP": playerIP,
+                            "BF": playerBF,
+                            "BB": bb,
+                            "SO%": kP,
+                            "FIP": FIP,
+                            "ERA": playerERA,
+                            "WHIP": playerWHIP,
+                            "K": strikeouts,
+                            "HR": playerHR,
+                            "W": playerWin,
+                            "L": playerLoss,
+                            "SV": playerSV
+                        }
+                    }
                     # If time is season, add WAR to dict, otherwise dont
                     if time == "season":
-                        playerDict = {
-                            playerName: [
-                                playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA,
-                                playerWHIP, playerWAR, strikeouts, playerHR, playerWin, playerLoss, playerSV
-                            ]
-                        }
-                    else:
-                        playerDict = {
-                            playerName: [
-                                playerID, playerGames, playerIP, playerBF, bb, kP, FIP, playerERA,
-                                playerWHIP, strikeouts, playerHR, playerWin, playerLoss, playerSV
-                            ]
-                        }
-
+                        playerDict[playerName]["WAR"] = playerWAR
                     # Add the player to their respective dictionary
                     if status == 1:
                         takenPlayerPDict.update(playerDict)
@@ -1261,18 +1140,18 @@ class League:
         :return:
         """
         playerID = statsapi.lookup_player(player_name)[0]['id']
-
         playerCareer = statsapi.player_stat_data(playerID, 'pitching', 'career')
-
+        # Set every stat that is not available to 0.0
+        for i in list(playerCareer['stats'][0]['stats'].keys()):
+            if playerCareer['stats'][0]['stats'][i] == "-":
+                playerCareer['stats'][0]['stats'][i] = 0.0
         playerID = playerCareer['id']
         playerCareer = playerCareer['stats'][0]['stats']
         playerGames = playerCareer['gamesPlayed']
         playerIP = playerCareer['inningsPitched']
-
         playerBF = playerCareer['atBats']  # Number of batters faced
         playerBB = playerCareer['baseOnBalls']  # Number of batters walked
         playerKP = playerCareer['strikeOuts']  # Number of strikeouts
-
         playerHR = playerCareer['homeRuns']  # Number of home runs allowed
         playerHBP = playerCareer['hitByPitch']  # Number of batters hit with a pitch
         playerERA = playerCareer['era']  # Player's ERA
@@ -1280,68 +1159,71 @@ class League:
         playerWin = playerCareer['wins']
         playerLoss = playerCareer['losses']
         playerSV = playerCareer['saves']
-
-        if playerGames == "-":
-            playerGames = 0
-        if playerBF == "-":
-            playerBF = 0
-        if playerBB == "-":
-            playerBB = 0
-        if playerKP == "-":
-            playerKP = 0
-
-        if playerHR == "-":
-            playerHR = 0
-        if playerHBP == "-":
-            playerHBP = 0
-        if playerIP == "-":
-            playerIP = 0
-        if playerERA == "-":
-            playerERA = 0
-        if playerWHIP == "-":
-            playerWHIP = 0
-
         # Set strikeouts before it is modified for K%
         strikeouts = playerKP
-
         try:
             bb = float(playerBB) / float(playerBF)
         except Exception as e:
-            print(e)
+            print("BB Error: ", e)
             bb = 0
-
         try:
             kP = float(playerKP) / float(playerBF)
         except Exception as e:
-            print(e)
+            print("K%: ", e)
             kP = 0
-
         # Multiply BB and KP by 100 to get a percentage and format them
-        bb *= 100
-        kP *= 100
-        bb = "{:.3f}".format(bb)
-        kP = "{:.3f}".format(kP)
-
+        bb = "{:.3f}".format(bb * 100)
+        kP = "{:.3f}".format(kP * 100)
         # Calculate the FIP score if possible
         try:
-            FIP = (13 * float(playerHR) + 3 * (float(playerBB) + float(playerHBP)) - 2 * float(strikeouts)) / float(
-                playerIP)
+            FIP = (13 * playerHR + 3 * (playerBB + playerHBP) - 2 * strikeouts) / float(playerIP)
             # Constant is the league average FPI score for year
-            FIP = float(FIP) + float(self.FIP_Constant)
+            FIP = FIP + self.FIP_Constant
         except Exception as e:
-            print(e)
+            print("FIP Error: ", e)
             FIP = 0
-
         FIP = "{:.3f}".format(FIP)
-
         # Return the desired pitcher
-        return {
-            player_name: [
-                float(playerID), float(playerGames), float(playerIP), float(playerBF), float(bb), float(kP),
-                float(FIP), float(playerERA), float(playerWHIP), float(strikeouts),
-                float(playerHR), float(playerWin), float(playerLoss), float(playerSV)
-            ]
-        }
+        try:
+            playerDict = {
+                player_name:
+                    {
+                        "GP": playerGames,
+                        "IP": playerIP,
+                        "BF": playerBF,
+                        "BB": bb,
+                        "SO%": kP,
+                        "FIP": FIP,
+                        "ERA": playerERA,
+                        "WHIP": playerWHIP,
+                        "K": strikeouts,
+                        "HR": playerHR,
+                        "W": playerWin,
+                        "L": playerLoss,
+                        "SV": playerSV
+                    }
+            }
+        except:
+            playerDict = {
+                player_name:
+                    {
+                        "GP": 0.0,
+                        "IP": 0.0,
+                        "BF": 0.0,
+                        "BB": 0.0,
+                        "SO%": 0.0,
+                        "FIP": 0.0,
+                        "ERA": 0.0,
+                        "WHIP": 0.0,
+                        "K": 0.0,
+                        "HR": 0.0,
+                        "W": 0.0,
+                        "L": 0.0,
+                        "SV": 0.0
+                    }
+            }
+        playerDict[player_name]["ID"] = playerID
+        return playerDict
 
     def batter_career_stats(self, player_name):
         """
@@ -1354,57 +1236,39 @@ class League:
         playerTeam = statsapi.get('team', {'teamId': playerTeam})['teams'][0]['name']
 
         playerCareer = statsapi.player_stat_data(playerID, 'hitting', 'career')
+        # Set every stat that is not available to 0.0
+        for i in list(playerCareer['stats'][0]['stats'].keys()):
+            if playerCareer['stats'][0]['stats'][i] == "-":
+                playerCareer['stats'][0]['stats'][i] = 0.0
         playerCareer = playerCareer['stats'][0]['stats']
-
         playerAB = playerCareer['atBats']  # Number of player at-bats
         playerAVG = playerCareer['avg']  # Player's batting average
         playerOPS = playerCareer['ops']  # Player's OBP + Slugging
         playerHR = playerCareer['homeRuns']  # Number of home runs hit
-
         playerBB = playerCareer['baseOnBalls']  # Number of walks
         playerIBB = playerCareer['intentionalWalks']  # Number of intentional walks
         playerSF = playerCareer['sacFlies']  # Number of sacrifice flies
         playerHBP = playerCareer['hitByPitch']  # Number of times hit by a pitch
-
         player2B = playerCareer['doubles']  # Number of doubles
         player3B = playerCareer['triples']  # Number of triples
         playerPA = playerCareer['plateAppearances']  # Number of plate appearances
         playerSO = playerCareer['strikeOuts']  # Number of strikeouts
         playerH = playerCareer['hits']  # Number of hits
-
         player1B = playerH - playerHR - player2B - player3B
-
-        # Set every stat that is not available to 0.0
-        if playerAB == "-": playerAB = 0
-        if playerAVG == "-": playerAVG = 0
-        if playerOPS == "-": playerOPS = 0
-        if playerHR == "-": playerHR = 0
-
-        if playerBB == "-": playerBB = 0
-        if playerIBB == "-": playerIBB = 0
-        if playerSF == "-": playerSF = 0
-        if playerHBP == "-": playerHBP = 0
-        if player1B == "-": player1B = 0
-        if player2B == "-": player2B = 0
-        if player3B == "-": player3B = 0
-        if playerPA == "-": playerPA = 0
-        if playerSO == "-": playerSO = 0
-        if playerH == "-": playerH = 0
-
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
             wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (playerAB + playerBB - playerIBB + playerSF + playerHBP)
-            wOBA = "{:.3f}".format(wOBA)
+            wOBA = float("{:.3f}".format(wOBA))
         except Exception as e:
-            print(e)
+            print("wOBA Error: ", e)
             wOBA = 0
 
         # Get the player's batting average on balls in play
         try:
             BABIP = (playerH - playerHR) / (playerAB - playerHR - playerSO + playerSF)
-            BABIP = "{:.3f}".format(BABIP)
+            BABIP = float("{:.3f}".format(BABIP))
         except Exception as e:
-            print(e)
+            print("BABIP Error: ", e)
             BABIP = 0
 
         # Gets the player's number of weighted runs scored
@@ -1412,14 +1276,14 @@ class League:
             wRC = (((wOBA - self.obaW) / self.wOBAScale) + self.rPAW) * playerPA
             wRC = float("{:.3f}".format(wRC))
         except Exception as e:
-            print(e)
+            print("wRC Error: ", e)
             wRC = 0
         # Gets the player's number of weighted runs created per plate appearance
         try:
-            wRCPA = float(wRC) / playerPA
-            wRCPA = "{:.3f}".format(wRCPA)
+            wRCPA = wRC / playerPA
+            wRCPA = float("{:.3f}".format(wRCPA))
         except Exception as e:
-            print(e)
+            print("wRC/PA Error: ", e)
             wRCPA = 0
         # Gets the player's weighted runs above average which gives us their weighted runs created plus which incorporates ballpark factors
         try:
@@ -1435,28 +1299,37 @@ class League:
                             self.alWRC / self.alPA)) * 100
             wRCP = float("{:.3f}".format(wRCP))
         except Exception as e:
-            print(e)
+            print("wRC+ Error: ", e)
             wRCP = 0
         # Get the players walk and strikeout percentages
         try:
             bb = (playerBB / playerAB) * 100
             bb = "{:.3f}".format(bb)
         except Exception as e:
-            print(e)
+            # print("BB Error: ", e)
             bb = 0
         try:
             k = (playerSO / playerAB) * 100
             k = "{:.3f}".format(k)
         except Exception as e:
-            print(e)
+            # print("K Error: ", e)
             k = 0
         # Return the desired player
-        return {
-            player_name: [
-                playerPA, float(bb), float(k), float(BABIP), float(playerAVG),
-                float(playerOPS), wOBA, float(wRC), float(wRCP), float(wRCPA)
-            ]
+        player_dict = {
+            player_name: {
+                "PA": playerPA,
+                "BB": bb,
+                "K": k,
+                "BABIP": BABIP,
+                "AVG": playerAVG,
+                "OPS": playerOPS,
+                "wOBA": wOBA,
+                "wRC": wRC,
+                "wRCPA": wRCPA,
+                "wRCP": wRCP
+            }
         }
+        return player_dict
 
     def outlier(self, player_name, status):
         """
@@ -1466,138 +1339,137 @@ class League:
         :param status: int - 0 == batter, 1 == pitcher
         :return:
         """
-        currentSeasonStats = self.get_player(player_name, "season")
-        if status == 0:
-            careerStats = self.batter_career_stats(player_name)
-            print("Current Season Stats")
-            self.print_batters(currentSeasonStats, reverse=True)
-            print("Career Stats")
-            self.print_batters(careerStats, reverse=True)
+        try:
+            currentSeasonStats = self.get_player(player_name, "season")
+            over_categories = []
+            under_categories = []
+            if status == 0:
+                careerStats = self.batter_career_stats(player_name)
+                print("Current Season Stats")
+                self.print_batters(currentSeasonStats, reverse=True)
+                print("Career Stats")
+                self.print_batters(careerStats, reverse=True)
+                currentWRCPA = float(currentSeasonStats[player_name]["wRCPA"])
+                currentWOBA = float(currentSeasonStats[player_name]["wOBA"])
+                currentWRCP = float(currentSeasonStats[player_name]["wRCP"])
+                currentBABIP = float(currentSeasonStats[player_name]["BABIP"])
+                careerWRCPA = float(careerStats[player_name]["wRCPA"])
+                careerWOBA = float(careerStats[player_name]["wOBA"])
+                careerWRCP = float(careerStats[player_name]["wRCP"])
+                careerBABIP = float(careerStats[player_name]["BABIP"])
+                if currentWRCPA > careerWRCPA:
+                    diff = currentWRCPA - careerWRCPA
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("wRC/PA")
+                    print("Up " + str(diff) + " points in wRC/PA")
+                else:
+                    diff = careerWRCPA - currentWRCPA
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("wRC/PA")
+                    print("Down " + str(diff) + " points in wRC/PA")
+                if currentWOBA > careerWOBA:
+                    diff = currentWOBA - careerWOBA
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("wOBA")
+                    print("Up " + str(diff) + " points in wOBA")
+                else:
+                    diff = careerWOBA - currentWOBA
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("wOBA")
+                    print("Down " + str(diff) + " points in wOBA")
+                if currentWRCP > careerWRCP:
+                    diff = currentWRCP - careerWRCP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("wRC+")
+                    print("Up " + str(diff) + " points in wRC+")
+                else:
+                    diff = careerWRCP - currentWRCP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("wRC+")
+                    print("Down " + str(diff) + " points in wRC+")
+                if currentBABIP > careerBABIP:
+                    diff = currentBABIP - careerBABIP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("BABIP")
+                    print("Up " + str(diff) + " points in BABIP")
+                else:
+                    diff = careerBABIP - currentBABIP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("BABIP")
+                    print("Down " + str(diff) + " points in BABIP")
+            else:
+                careerStats = self.pitcher_career_stats(player_name)
+                print("Current Season Stats")
+                self.print_pitchers(currentSeasonStats, reverse=True)
+                print("Career Stats")
+                self.print_pitchers(careerStats, reverse=True)
+                currentFIP = float(currentSeasonStats[player_name]['FIP'])
+                currentERA = float(currentSeasonStats[player_name]['ERA'])
+                currentWHIP = float(currentSeasonStats[player_name]['WHIP'])
+                currentKP = float(currentSeasonStats[player_name]['SO%'])
+                currentBP = float(currentSeasonStats[player_name]['BB'])
 
-            currentWRCPA = list(currentSeasonStats.values())[0][-1]
-            currentWOBA = list(currentSeasonStats.values())[0][6]
-            currentWRCP = list(currentSeasonStats.values())[0][9]
+                careerFIP = float(careerStats[player_name]['FIP'])
+                careerERA = float(careerStats[player_name]['ERA'])
+                careerWHIP = float(careerStats[player_name]['WHIP'])
+                careerKP = float(careerStats[player_name]['SO%'])
+                careerBP = float(careerStats[player_name]['BB'])
 
-            careerWRCPA = list(careerStats.values())[0][-1]
-            careerWOBA = list(careerStats.values())[0][6]
-            careerWRCP = list(careerStats.values())[0][8]
-
-            currTot = 0
-            carTot = 0
-
-            if currentWRCPA > careerWRCPA:
-                currTot += 1
-                diff = currentWRCPA - careerWRCPA
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in wRC/PA")
-            else:
-                carTot += 1
-                diff = careerWRCPA - currentWRCPA
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in wRC/PA")
-            if currentWOBA > careerWOBA:
-                currTot += 1
-                diff = currentWOBA - careerWOBA
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in wOBA")
-            else:
-                carTot += 1
-                diff = careerWOBA - currentWOBA
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in wOBA")
-            if currentWRCP > careerWRCP:
-                currTot += 1
-                diff = currentWRCP - careerWRCP
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in wRC+")
-            else:
-                carTot += 1
-                diff = careerWRCP - currentWRCP
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in wRC+")
-            if currTot > carTot:
-                print("Currently overachieving based on the following categories:")
-            else:
-                print("Currently underacheiving based on the following categories:")
-            print("wRC/PA, wOBA, wRC+")
-        else:
-            careerStats = self.pitcher_career_stats(player_name)
-            print("Current Season Stats")
-            self.print_pitchers(currentSeasonStats, reverse=True)
-            print("Career Stats")
-            self.print_pitchers(careerStats, reverse=True)
-
-            currentFIP = list(currentSeasonStats.values())[0][6]
-            currentERA = list(currentSeasonStats.values())[0][7]
-            currentWHIP = list(currentSeasonStats.values())[0][8]
-            currentKP = list(currentSeasonStats.values())[0][5]
-            currentBP = list(currentSeasonStats.values())[0][4]
-
-            careerFIP = list(careerStats.values())[0][6]
-            careerERA = list(careerStats.values())[0][7]
-            careerWHIP = list(careerStats.values())[0][8]
-            careerKP = list(careerStats.values())[0][5]
-            careerBP = list(careerStats.values())[0][4]
-
-            currTot = 0
-            carTot = 0
-
-            if currentFIP < careerFIP:
-                currTot += 1
-                diff = careerFIP - currentFIP
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in FIP")
-            else:
-                carTot += 1
-                diff = currentFIP - careerFIP
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in FIP")
-            if currentERA < careerERA:
-                currTot += 1
-                diff = careerERA - currentERA
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in ERA")
-            else:
-                carTot += 1
-                diff = currentERA - careerERA
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in ERA")
-            if currentWHIP < careerWHIP:
-                currTot += 1
-                diff = careerWHIP - currentWHIP
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in WHIP")
-            else:
-                carTot += 1
-                diff = currentWHIP - careerWHIP
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in WHIP")
-            if currentKP > careerKP:
-                currTot += 1
-                diff = currentKP - careerKP
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in K%")
-            else:
-                carTot += 1
-                diff = careerKP - currentKP
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in K%")
-            if currentBP < careerBP:
-                currTot += 1
-                diff = careerBP - currentBP
-                diff = "{:.3f}".format(diff)
-                print("Up " + str(diff) + " points in BB%")
-            else:
-                carTot += 1
-                diff = currentBP - careerBP
-                diff = "{:.3f}".format(diff)
-                print("Down " + str(diff) + " points in BB%")
-
-            if currTot > carTot:
-                print("Currently overachieving based on the following categories:")
-            else:
-                print("Currently underacheiving based on the following categories:")
-            print("FIP, ERA, WHIP, K%, BB%")
+                if currentFIP < careerFIP:
+                    diff = careerFIP - currentFIP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("FIP")
+                    print("Down " + str(diff) + " points in FIP")
+                else:
+                    diff = currentFIP - careerFIP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("FIP")
+                    print("Up " + str(diff) + " points in FIP")
+                if currentERA < careerERA:
+                    diff = careerERA - currentERA
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("ERA")
+                    print("Down " + str(diff) + " points in ERA")
+                else:
+                    diff = currentERA - careerERA
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("ERA")
+                    print("Up " + str(diff) + " points in ERA")
+                if currentWHIP < careerWHIP:
+                    diff = careerWHIP - currentWHIP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("WHIP")
+                    print("Down " + str(diff) + " points in WHIP")
+                else:
+                    diff = currentWHIP - careerWHIP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("WHIP")
+                    print("Up " + str(diff) + " points in WHIP")
+                if currentKP > careerKP:
+                    diff = currentKP - careerKP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("K%")
+                    print("Up " + str(diff) + " points in K%")
+                else:
+                    diff = careerKP - currentKP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("K%")
+                    print("Down " + str(diff) + " points in K%")
+                if currentBP < careerBP:
+                    diff = careerBP - currentBP
+                    diff = "{:.3f}".format(diff)
+                    over_categories.append("BB%")
+                    print("Down " + str(diff) + " points in BB%")
+                else:
+                    diff = currentBP - careerBP
+                    diff = "{:.3f}".format(diff)
+                    under_categories.append("BB%")
+                    print("Up " + str(diff) + " points in BB%")
+            print(f"Currently overachieving in the following categories: {over_categories}")
+            print(f"Currently underacheiving in the following categories: {under_categories}")
+        except Exception as e:
+            print("Did you correctly call the function? (i.e. not using the 'status' parameter correctly)")
+            print("Error: ", e)
 
     def whos_hot(self, time):
         """
@@ -1607,24 +1479,24 @@ class League:
         :return:
         """
         # Print top 10 pitcher free agents and taken players
-        ttRP = dict(list(self.get_pitchers(time, 1, qualified=True).items()))
-        hotPList = dict(sorted(ttRP.items(), key=lambda item: item[1][6])[0:10])
+        ttRP = self.get_pitchers(time, 1, qualified=True)
+        hotPList = dict(sorted(ttRP.items(), key=lambda item: item[1]['FIP'])[0:10])
         print("\n" + "Top 10 Hottest Rostered Pitchers: ")
         self.print_pitchers(hotPList, reverse=False)
 
-        ttFAP = dict(list(self.get_pitchers(time, 2, qualified=True).items()))
-        hotPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1][6])[0:10])
+        ttFAP = self.get_pitchers(time, 2, qualified=True)
+        hotPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1]['FIP'])[0:10])
         print("\n" + "Top 10 Hottest Free Agent Pitchers: ")
         self.print_pitchers(hotPList2, reverse=False)
 
         # Print top 10 batter free agents and taken players
-        ttRB = dict(list(self.get_batters(time, 1, qualified=True).items()))
-        hotBList = dict(sorted(ttRB.items(), key=lambda item: item[1][6], reverse=True)[0:10])
+        ttRB = self.get_batters(time, 1, qualified=True)
+        hotBList = dict(sorted(ttRB.items(), key=lambda item: item[1]['wRCP'], reverse=True)[0:10])
         print("\n" + "Top 10 Hottest Rostered Batters: ")
         self.print_batters(hotBList, reverse=True)
 
         ttFAB = dict(list(self.get_batters(time, 2, qualified=True).items()))
-        hotBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1][6], reverse=True)[0:10])
+        hotBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1]['wRCP'], reverse=True)[0:10])
         print("\n" + "Top 10 Hottest Free Agent Batters: ")
         self.print_batters(hotBList2, reverse=True)
 
@@ -1636,23 +1508,23 @@ class League:
         :return:
         """
         # Print top 10 worst pitcher free agents and taken players
-        ttRP = dict(list(self.get_pitchers(time, 1, qualified=True).items()))
-        coldPList = dict(sorted(ttRP.items(), key=lambda item: item[1][6], reverse=True)[0:10])
+        ttRP = self.get_pitchers(time, 1, qualified=True)
+        coldPList = dict(sorted(ttRP.items(), key=lambda item: item[1]['FIP'], reverse=True)[0:10])
         print("\n" + "Top 10 Coldest Rostered Pitchers: ")
         self.print_pitchers(coldPList, reverse=True)
 
-        ttFAP = dict(list(self.get_pitchers(time, 2, qualified=True).items()))
-        coldPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1][6], reverse=True)[0:10])
+        ttFAP = self.get_pitchers(time, 2, qualified=True)
+        coldPList2 = dict(sorted(ttFAP.items(), key=lambda item: item[1]['FIP'], reverse=True)[0:10])
         print("\n" + "Top 10 Coldest Free Agent Pitchers: ")
         self.print_pitchers(coldPList2, reverse=True)
 
         # Print top 10 worst batter free agents and taken players
-        ttRB = dict(list(self.get_batters(time, 1, qualified=True).items()))
-        coldBList = dict(sorted(ttRB.items(), key=lambda item: item[1][6])[0:10])
+        ttRB = self.get_batters(time, 1, qualified=True)
+        coldBList = dict(sorted(ttRB.items(), key=lambda item: item[1]['wRCP'])[0:10])
         print("\n" + "Top 10 Coldest Rostered Batters: ")
         self.print_batters(coldBList, reverse=False)
 
-        ttFAB = dict(list(self.get_batters(time, 2, qualified=True).items()))
-        coldBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1][6])[0:10])
+        ttFAB = self.get_batters(time, 2, qualified=True)
+        coldBList2 = dict(sorted(ttFAB.items(), key=lambda item: item[1]['wRCP'])[0:10])
         print("\n" + "Top 10 Coldest Free Agent Batters: ")
         self.print_batters(coldBList2, reverse=False)
