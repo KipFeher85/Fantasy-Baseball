@@ -16,6 +16,10 @@ League Constants
 - Make sure to call update_ballpark_constants ONCE per year. This only needs done once per season since it uses ballpark factors from the previous season
 - Make sure to ALWAYS call starter() whenever using the package, it is required for ALL functions
 
+Qualified Configurations
+
+- Make sure to have your 'configs.yaml' file with the correct fields as shown on the GitHub project page
+
 Python Module Usage
 -------------------
 
@@ -73,14 +77,14 @@ Python Module Usage
   ....
 
   # Get details for every team in your league
-  In [10]: lgObj.teamDetails()
+  In [10]: lgObj.team_details()
   Out[10]:
   [('team_key', 'team's key'), ('team_id', '10'), ('name', 'Name A'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'url'}}]), ('waiver_priority', 10), ('number_of_moves', '21'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '1'}), ('league_scoring_type', 'head'), ('draft_position', 2), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '10', 'nickname': 'Mr. X', 'guid': 'B3QNT4MWWQDXZS3J7HDPCDPWVU', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '658', 'felo_tier': 'silver'}}])]
   [('team_key', 'team's key'), ('team_id', '12'), ('name', 'Name B'), ('url', 'team url'), ('team_logos', [{'team_logo': {'size': 'large', 'url': 'url'}}]), ('waiver_priority', 12), ('number_of_moves', '16'), ('number_of_trades', 0), ('roster_adds', {'coverage_type': 'week', 'coverage_value': 11, 'value': '0'}), ('league_scoring_type', 'head'), ('draft_position', 3), ('has_draft_grade', 0), ('managers', [{'manager': {'manager_id': '12', 'nickname': 'Mr. Y', 'guid': 'JLUKFLTAHXRTWF46MW3YLFKE3E', 'image_url': 'https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg', 'felo_score': '668', 'felo_tier': 'silver'}}])]
   ....
 
   # Display every game's matchup, pitcher stats over the past month, your batters stats over the past week, and a note if available
-  In [11]: lgObj.predictTeamDay()
+  In [11]: lgObj.predict_team_day()
   Out[11]:
   Game 1: New York Mets at Miami Marlins
   Pitcher Stats over the past month
@@ -195,7 +199,7 @@ Python Module Usage
   Name: Kevin Newman PA: 319.0 wRC: 17.985 wRC/PA: 0.056 wOBA: 0.235 BABIP: 0.217 WAR: 1.0 wRC+: 48.883
   ....
 
-  In [19]: lgObj.get_all_players('lastmonth')
+  In [19]: lgObj.get_all_players('lastmonth', qualified=True)
   Out[19]:
   All pitchers currently on your team:
   Name: Chad Green GS: 9.0 IP: 13.2 BF: 50.0 BB%: 0.000 K%: 38.000 FIP: 1.270 ERA: 3.29 WHIP: 0.66 W: 3.0 L: 1.0 SV: 1.0
