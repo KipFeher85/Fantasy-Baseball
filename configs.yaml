@@ -1,0 +1,10 @@
+# Batter Qualification Configs
+# Number of plate appearances we require for a batter to qualify when we set qualified=True
+plate_appearances_season: 150
+plate_appearances_month: 30
+plate_appearances_week: 5
+# Pitcher Qualification Configs
+# Number of batters faced we require for a pitcher to qualify when we set qualified=True
+batters_faced_season: 50
+batters_faced_month: 25
+batters_faced_week: 10
