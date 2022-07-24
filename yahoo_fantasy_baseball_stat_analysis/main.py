@@ -9,8 +9,8 @@ from dateutil.relativedelta import relativedelta
 
 
 class League:
-    def __init__(self, year):
-        
+    def __init__(self, year, league_id=""):
+
         # Obtain Yahoo OAuth2 access token from the file given
         self.oauth = OAuth2(None, None, from_file='OAuth2.json')
 
@@ -18,22 +18,32 @@ class League:
         self.gm = yfa.Game(self.oauth, 'mlb')
 
         # Get the league id desired
-        self.leagueID = self.gm.league_ids(year=year)[0]
-    
+        if len(league_id) > 1:
+            self.leagueID = league_id
+        else:
+            league_ids = self.gm.league_ids(year=year)
+            print(f"These are the available league_ids: {league_ids}")
+            self.leagueID = league_ids[0]
+            print(f"We will default to the first league id: {self.leagueID}")
+
         # Create a league object given the first id of the user's league id's for the season
-        self.lg = self.gm.to_league(self.leagueID)
-    
-        # Create a team object given the team's key
-        self.tm = self.lg.to_team(team_key=self.lg.team_key())
+        try:
+            self.lg = self.gm.to_league(self.leagueID)
+            # Create a team object given the team's key
+            self.tm = self.lg.to_team(team_key=self.lg.team_key())
+        except Exception as e:
+            print("Unable to connect to the desired league. If you entered a 'league_id' value make sure it is valid.")
+            print(e)
+            pass
 
         # Set the desired year
         self.yr = year
-    
+
         # Create dict to hold ballpark factors, lists to hold NL and AL team names
         self.ballParkDict = {}
         self.alTeamList = []
         self.nlTeamList = []
-    
+
         self.obaW = 0
         self.wOBAScale = 0
         self.wBB = 0
@@ -43,15 +53,19 @@ class League:
         self.w3B = 0
         self.wHR = 0
         self.rPAW = 0  # wRAA weight
-    
+
         self.alPA = 0
         self.alWRC = 0
         self.nlPA = 0
         self.nlWRC = 0
-    
+
         self.FIP_Constant = 0
 
-        self.__configs = yaml.load(open("configs.yaml"), Loader=yaml.FullLoader)
+        try:
+            self.__configs = yaml.load(open("configs.yaml"), Loader=yaml.FullLoader)
+        except Exception as e:
+            print(e)
+
 
     def update_ballpark_constants(self):
         """
@@ -141,8 +155,10 @@ class League:
         lYear = "20" + last_month.strftime("%y")
 
         # Set the url to get AL and NL league stats for the last month
-        alURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
-        nlURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        alURList.append(
+            f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        nlURList.append(
+            f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
 
         # Get the date of previous week from current day
         last_week = date.today() - relativedelta(weeks=1)
@@ -151,8 +167,10 @@ class League:
         lYear = "20" + last_week.strftime("%y")
 
         # Set the url to get AL and NL league stats for the last week
-        alURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
-        nlURList.append(f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        alURList.append(
+            f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=al&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
+        nlURList.append(
+            f"https://www.fangraphs.com/leaders.aspx?pos=all&stats=bat&lg=nl&qual=0&type=1&season={year}&month=1000&season1={year}&ind=0&team=0,ss&rost=0&age=0&filter=&players=0&startdate={lYear}-{lMonth}-{lDay}&enddate={year}-{month}-{day}")
 
         # Create lists to hold AL and NL league stats
         alPAList = []
@@ -181,23 +199,23 @@ class League:
             'HR Weight': self.wHR,
             'wRAA Weight': self.rPAW,
             'AL Plate Appearances': {
-                "Season": int(alPAList[0]), 
-                "Last Month": int(alPAList[1]), 
+                "Season": int(alPAList[0]),
+                "Last Month": int(alPAList[1]),
                 "Last Week": int(alPAList[2])
             },
             'AL Weighted Runs Created': {
-                "Season": int(alWRCList[0]), 
-                "Last Month": int(alWRCList[1]), 
+                "Season": int(alWRCList[0]),
+                "Last Month": int(alWRCList[1]),
                 "Last Week": int(alWRCList[2])
             },
             'NL Plate Appearances': {
-                "Season": int(nlPAList[0]), 
-                "Last Month": int(nlPAList[1]), 
+                "Season": int(nlPAList[0]),
+                "Last Month": int(nlPAList[1]),
                 "Last Week": int(nlPAList[2])
             },
             'NL Weighted Runs Created': {
-                "Season": int(nlWRCList[0]), 
-                "Last Month": int(nlWRCList[1]), 
+                "Season": int(nlWRCList[0]),
+                "Last Month": int(nlWRCList[1]),
                 "Last Week": int(nlWRCList[2])
             },
             'FIP Constant': self.FIP_Constant
@@ -359,7 +377,7 @@ class League:
         """
         # Create a dictionary of all the games being played today
         today = statsapi.schedule(date.today())
-        if(len(today)) > 0:
+        if (len(today)) > 0:
             game_list = []
             # For every game on the schedule
             for game in today:
@@ -392,13 +410,15 @@ class League:
                     }
                 })
             for i in range(0, len(game_list)):
-                print("\nGame " + str(i + 1) + ": " + str(game_list[i]["Away Name"]) + " at " + str(game_list[i]["Home Name"]))
+                print("\nGame " + str(i + 1) + ": " + str(game_list[i]["Away Name"]) + " at " + str(
+                    game_list[i]["Home Name"]))
                 print("Pitcher Stats over the past month")
                 try:
                     hPitcherName = game_list[i]['Home Pitcher']['Name']
                     hPitcher = game_list[i]["Home Pitcher"]["Stats"][hPitcherName]
                     hPitcherNote = game_list[i]["Home Pitcher"]["Note"]
-                    print(f"HP: {hPitcherName} IP: {hPitcher['IP']} BF: {hPitcher['BF']} BB%: {hPitcher['BB']} K%: {hPitcher['SO%']} FIP: {hPitcher['FIP']} ERA: {hPitcher['ERA']} WHIP: {hPitcher['WHIP']} K: {hPitcher['K']} HR: {hPitcher['HR']}")
+                    print(
+                        f"HP: {hPitcherName} IP: {hPitcher['IP']} BF: {hPitcher['BF']} BB%: {hPitcher['BB']} K%: {hPitcher['SO%']} FIP: {hPitcher['FIP']} ERA: {hPitcher['ERA']} WHIP: {hPitcher['WHIP']} K: {hPitcher['K']} HR: {hPitcher['HR']}")
                     print(str(hPitcherName) + " Note: " + hPitcherNote)
                 except Exception as e:
                     print("HP: There isnt a specified pitcher or the pitcher's information is unavailable")
@@ -406,7 +426,8 @@ class League:
                     aPitcherName = game_list[i]['Away Pitcher']['Name']
                     aPitcher = game_list[i]["Away Pitcher"]["Stats"][aPitcherName]
                     aPitcherNote = game_list[i]["Away Pitcher"]["Note"]
-                    print(f"AP: {aPitcherName} IP: {aPitcher['IP']} BF: {aPitcher['BF']} BB%: {aPitcher['BB']} K%: {aPitcher['SO%']} FIP: {aPitcher['FIP']} ERA: {aPitcher['ERA']} WHIP: {aPitcher['WHIP']} K: {aPitcher['K']} HR: {aPitcher['HR']}")
+                    print(
+                        f"AP: {aPitcherName} IP: {aPitcher['IP']} BF: {aPitcher['BF']} BB%: {aPitcher['BB']} K%: {aPitcher['SO%']} FIP: {aPitcher['FIP']} ERA: {aPitcher['ERA']} WHIP: {aPitcher['WHIP']} K: {aPitcher['K']} HR: {aPitcher['HR']}")
                     print(str(aPitcherName) + " Note: " + aPitcherNote)
                 except Exception as e:
                     print("AP: There isnt a specified pitcher or the pitcher's information is unavailable")
@@ -435,9 +456,11 @@ class League:
         sortedBList = sorted(ed_dict.items(), key=lambda item: item[1]["wRCP"], reverse=reverse)
         for i in sortedBList:
             if "WAR" in i[1]:
-                print(f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']} WAR: {i[1]['WAR']}")
+                print(
+                    f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']} WAR: {i[1]['WAR']}")
             else:
-                print(f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']}")
+                print(
+                    f"Name: {i[0]} PA: {i[1]['PA']} wRC: {i[1]['wRC']} wRC/PA: {i[1]['wRCPA']} wOBA: {i[1]['wOBA']} BABIP: {i[1]['BABIP']} wRC+: {i[1]['wRCP']}")
 
     def print_pitchers(self, ed_dict, reverse):
         """
@@ -451,9 +474,11 @@ class League:
         for i in sortedPList:
             if "WAR" in i[1]:
                 # If type equals 'season', print WAR. If it doesnt then dont include WAR since it cant be calculated
-                print(f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} WAR: {i[1]['WAR']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
+                print(
+                    f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} WAR: {i[1]['WAR']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
             else:
-                print(f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
+                print(
+                    f"Name: {i[0]} GS: {i[1]['GP']} IP: {i[1]['IP']} BF: {i[1]['BF']} BB%: {i[1]['BB']} K%: {i[1]['SO%']} FIP: {i[1]['FIP']} ERA: {i[1]['ERA']} WHIP: {i[1]['WHIP']} W: {i[1]['W']} L: {i[1]['L']} SV: {i[1]['SV']}")
 
     def get_batters(self, time, status, qualified):
         """
@@ -591,8 +616,8 @@ class League:
                     # Gets the player's weighted on base average if available using league constants from FanGraphs
                     try:
                         wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (
-                                    self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (
-                                           playerAB + playerBB - playerIBB + playerSF + playerHBP)
+                                self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (
+                                       playerAB + playerBB - playerIBB + playerSF + playerHBP)
                         wOBA = float("{:.3f}".format(wOBA))
                     except Exception as e:
                         # print("wOBA Error: ", e)
@@ -626,10 +651,10 @@ class League:
                         # wRC+ = (((wRAA/PA + League R/PA) + (League R/PA – Park Factor* League R/PA))/ (AL or NL wRC/PA excluding pitchers))*100
                         if playerTeam in self.nlTeamList:
                             wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
-                                        self.nlWRC / self.nlPA)) * 100
+                                    self.nlWRC / self.nlPA)) * 100
                         else:
                             wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
-                                        self.alWRC / self.alPA)) * 100
+                                    self.alWRC / self.alPA)) * 100
                         wRCP = float("{:.3f}".format(wRCP))
                     except Exception as e:
                         # print("wRC+ Error: ", e)
@@ -760,7 +785,9 @@ class League:
             playerWAR = 0
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
-            wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (playerAB + playerBB - playerIBB + playerSF + playerHBP)
+            wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (
+                        self.w3B * player3B) + (self.wHR * playerHR)) / (
+                               playerAB + playerBB - playerIBB + playerSF + playerHBP)
             wOBA = float("{:.3f}".format(wOBA))
         except Exception as e:
             # print("wOBA Error: ", e)
@@ -793,9 +820,11 @@ class League:
             playerParkFactor = self.ballParkDict[playerTeam] / 100
             # wRC+ = (((wRAA/PA + League R/PA) + (League R/PA – Park Factor* League R/PA))/ (AL or NL wRC/PA excluding pitchers))*100
             if playerTeam in self.nlTeamList:
-                wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (self.nlWRC / self.nlPA)) * 100
+                wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
+                            self.nlWRC / self.nlPA)) * 100
             else:
-                wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (self.alWRC / self.alPA)) * 100
+                wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
+                            self.alWRC / self.alPA)) * 100
             wRCP = float("{:.3f}".format(wRCP))
         except Exception as e:
             # print("wRC+ Error: ", e)
@@ -857,7 +886,7 @@ class League:
             playerHBP = pitcherStats['HBP']  # Number of batters hit with a pitch
             playerERA = pitcherStats['ERA']  # Player's ERA
             playerWHIP = pitcherStats['WHIP']  # Player's WHIP
-            playerWin = pitcherStats['W']      # Number of wins
+            playerWin = pitcherStats['W']  # Number of wins
             playerLoss = pitcherStats['L']
             playerSV = pitcherStats['SV']
             try:
@@ -1052,22 +1081,22 @@ class League:
                     FIP = "{:.3f}".format(FIP)
                     playerDict = {
                         playerName:
-                        {
-                            "ID": playerID,
-                            "GP": playerGames,
-                            "IP": playerIP,
-                            "BF": playerBF,
-                            "BB": bb,
-                            "SO%": kP,
-                            "FIP": FIP,
-                            "ERA": playerERA,
-                            "WHIP": playerWHIP,
-                            "K": strikeouts,
-                            "HR": playerHR,
-                            "W": playerWin,
-                            "L": playerLoss,
-                            "SV": playerSV
-                        }
+                            {
+                                "ID": playerID,
+                                "GP": playerGames,
+                                "IP": playerIP,
+                                "BF": playerBF,
+                                "BB": bb,
+                                "SO%": kP,
+                                "FIP": FIP,
+                                "ERA": playerERA,
+                                "WHIP": playerWHIP,
+                                "K": strikeouts,
+                                "HR": playerHR,
+                                "W": playerWin,
+                                "L": playerLoss,
+                                "SV": playerSV
+                            }
                     }
                     # If time is season, add WAR to dict, otherwise dont
                     if time == "season":
@@ -1257,7 +1286,9 @@ class League:
         player1B = playerH - playerHR - player2B - player3B
         # Gets the player's weighted on base average if available using league constants from FanGraphs
         try:
-            wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (self.w3B * player3B) + (self.wHR * playerHR)) / (playerAB + playerBB - playerIBB + playerSF + playerHBP)
+            wOBA = ((self.wBB * playerBB) + (self.wHBP * playerHBP) + (self.w1B * player1B) + (self.w2B * player2B) + (
+                        self.w3B * player3B) + (self.wHR * playerHR)) / (
+                               playerAB + playerBB - playerIBB + playerSF + playerHBP)
             wOBA = float("{:.3f}".format(wOBA))
         except Exception as e:
             print("wOBA Error: ", e)
@@ -1293,10 +1324,10 @@ class League:
             # wRC+ = (((wRAA/PA + League R/PA) + (League R/PA – Park Factor* League R/PA))/ (AL or NL wRC/PA excluding pitchers))*100
             if playerTeam in self.nlTeamList:
                 wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
-                            self.nlWRC / self.nlPA)) * 100
+                        self.nlWRC / self.nlPA)) * 100
             else:
                 wRCP = ((((wRAA / playerPA) + self.rPAW) + (self.rPAW - (playerParkFactor * self.rPAW))) / (
-                            self.alWRC / self.alPA)) * 100
+                        self.alWRC / self.alPA)) * 100
             wRCP = float("{:.3f}".format(wRCP))
         except Exception as e:
             print("wRC+ Error: ", e)
