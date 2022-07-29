@@ -20,6 +20,11 @@ Qualified Configurations
 
 - Make sure to have your 'configs.yaml' file with the correct fields as shown on the GitHub project page
 
+Multiple Leagues
+
+- If you have multiple leagues simply pass in the league_id to the yfbsa.League object
+- If "league_id" is not passed, it will default to the first league_id registered. The program will display a list of available id's however
+
 Python Module Usage
 -------------------
 
