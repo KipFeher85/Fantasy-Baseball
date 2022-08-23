@@ -94,16 +94,12 @@ Python Module Usage
   Game 1: New York Mets at Miami Marlins
   Pitcher Stats over the past month
   HP: Daniel Castano IP: 10.0 BF: 46.0 BB%: 10.87 K%: 13.043 FIP: 5.064 ERA: 3.6 WHIP: 1.7 K: 1.0 HR: 0.0
-  Daniel Castano Note: Not Available
   AP: David Peterson IP: 20.1 BF: 97.0 BB%: 13.402 K%: 20.619 FIP: 4.358 ERA: 4.43 WHIP: 1.77 K: 1.0 HR: 2.0
-  David Peterson Note: Not Available
-
+  
   Game 2: Houston Astros at New York Yankees
   Pitcher Stats over the past month
   HP: Nestor Cortes IP: 10.0 BF: 46.0 BB%: 10.87 K%: 13.043 FIP: 5.064 ERA: 3.6 WHIP: 1.7 K: 1.0 HR: 0.0
-  Nestor Cortes Note: Not Available
   AP: Jose Urquidy IP: 27.0 BF: 125.0 BB%: 6.4 K%: 17.6 FIP: 5.423 ERA: 5.33 WHIP: 1.52 K: 6.0 HR: 2.0
-  Jose Urquidy Note: Not Available
   ....
 
   Team batter stats over the past week:
