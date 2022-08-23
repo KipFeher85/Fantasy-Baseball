@@ -66,7 +66,6 @@ class League:
         except Exception as e:
             print(e)
 
-
     def update_ballpark_constants(self):
         """
         THIS FUNCTION ONLY NEEDS TO BE CALLED ONCE PER SEASON
@@ -377,60 +376,97 @@ class League:
         """
         # Create a dictionary of all the games being played today
         today = statsapi.schedule(date.today())
+        # Create a list to add our filtered game data to
+        game_list = []
+        # If there is atleast a game on the schedule
         if (len(today)) > 0:
-            game_list = []
             # For every game on the schedule
             for game in today:
-                hN = game["home_pitcher_note"]
-                if hN == "": hN = "Not Available"
-                aN = game["away_pitcher_note"]
-                if aN == "": aN = "Not Available"
-                if game["home_probable_pitcher"] == "Shohei Ohtani":
+                # Get the names of the home and away projected pitchers
+                h_name = game["home_probable_pitcher"]
+                a_name = game["away_probable_pitcher"]
+                # If HP is Shohei, make sure to give him his PITCHER ID (NOT batter)
+                if h_name == "Shohei Ohtani":
                     h_id = "1000002"
+                # If HP is unavaliable
+                elif h_name == "" or h_name == " ":
+                    h_name = h_id = "N/A"
                 else:
-                    h_id = self.lg.player_details(game["home_probable_pitcher"])[0]['player_id']
-                if game["home_probable_pitcher"] == "Shohei Ohtani":
+                    # Grab the player's player_id
+                    try:
+                        h_id = self.lg.player_details(h_name)[0]['player_id']
+                    except:
+                        h_id = "N/A"
+                # If AP is Shohei, make sure to give him his PITCHER ID (NOT batter)
+                if a_name == "Shohei Ohtani":
                     a_id = "1000002"
+                # If AP is unavaliable
+                elif a_name == "" or a_name == " ":
+                    a_name = a_id = "N/A"
                 else:
-                    a_id = self.lg.player_details(game["away_probable_pitcher"])[0]['player_id']
+                    # Grab the player's player_id
+                    try:
+                        a_id = self.lg.player_details(a_name)[0]['player_id']
+                    except:
+                        a_id = "N/A"
+                # Attempt to get the home pitcher's stats over the past month from their id
+                # Grab the player's name (THIS IS NEEDED BECAUSE OF PLAYERS WITH SPECIAL CHARACTERS (i.e. Carlos Rodón)
+                try:
+                    h_stats = self.get_pitcher("lastmonth", h_id)
+                    h_name = list(h_stats.keys())[0]
+                except:
+                    print(f"Failed to get stats for {h_name}")
+                    h_stats = "N/A"
+                # Attempt to get the home pitcher's stats over the past month from their id
+                # Grab the player's name (THIS IS NEEDED BECAUSE OF PLAYERS WITH SPECIAL CHARACTERS (i.e. Carlos Rodón)
+                try:
+                    a_stats = self.get_pitcher("lastmonth", a_id)
+                    a_name = list(a_stats.keys())[0]
+                except:
+                    print(f"Failed to get stats for {a_name}")
+                    a_stats = "N/A"
+                # Add filtered data to our list of games
                 game_list.append({
                     "Home Name": game["home_name"],
                     "Away Name": game["away_name"],
                     "Home Pitcher": {
-                        "Name": game["home_probable_pitcher"],
+                        "Name": h_name,
                         "ID": h_id,
-                        "Stats": self.get_pitcher("lastmonth", h_id),
-                        "Note": hN
+                        "Stats": h_stats
                     },
                     "Away Pitcher": {
-                        "Name": game["away_probable_pitcher"],
+                        "Name": a_name,
                         "ID": a_id,
-                        "Stats": self.get_pitcher("lastmonth", a_id),
-                        "Note": aN
+                        "Stats": a_stats
                     }
                 })
+            # For every game in our filtered list
             for i in range(0, len(game_list)):
+                # Display the game number and pitcher names
                 print("\nGame " + str(i + 1) + ": " + str(game_list[i]["Away Name"]) + " at " + str(
                     game_list[i]["Home Name"]))
                 print("Pitcher Stats over the past month")
+                # Display pitcher stats from over the past month
                 try:
                     hPitcherName = game_list[i]['Home Pitcher']['Name']
                     hPitcher = game_list[i]["Home Pitcher"]["Stats"][hPitcherName]
-                    hPitcherNote = game_list[i]["Home Pitcher"]["Note"]
                     print(
                         f"HP: {hPitcherName} IP: {hPitcher['IP']} BF: {hPitcher['BF']} BB%: {hPitcher['BB']} K%: {hPitcher['SO%']} FIP: {hPitcher['FIP']} ERA: {hPitcher['ERA']} WHIP: {hPitcher['WHIP']} K: {hPitcher['K']} HR: {hPitcher['HR']}")
-                    print(str(hPitcherName) + " Note: " + hPitcherNote)
                 except Exception as e:
-                    print("HP: There isnt a specified pitcher or the pitcher's information is unavailable")
+                    try:
+                        print(f"HP: {hPitcherName} Stats N/A")
+                    except:
+                        print("HP: There isnt a specified pitcher")
                 try:
                     aPitcherName = game_list[i]['Away Pitcher']['Name']
                     aPitcher = game_list[i]["Away Pitcher"]["Stats"][aPitcherName]
-                    aPitcherNote = game_list[i]["Away Pitcher"]["Note"]
                     print(
                         f"AP: {aPitcherName} IP: {aPitcher['IP']} BF: {aPitcher['BF']} BB%: {aPitcher['BB']} K%: {aPitcher['SO%']} FIP: {aPitcher['FIP']} ERA: {aPitcher['ERA']} WHIP: {aPitcher['WHIP']} K: {aPitcher['K']} HR: {aPitcher['HR']}")
-                    print(str(aPitcherName) + " Note: " + aPitcherNote)
                 except Exception as e:
-                    print("AP: There isnt a specified pitcher or the pitcher's information is unavailable")
+                    try:
+                        print(f"AP: {aPitcherName} Stats N/A")
+                    except:
+                        print("AP: There isnt a specified pitcher")
         else:
             print("There are no games today :/")
 
